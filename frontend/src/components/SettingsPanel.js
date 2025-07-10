@@ -3,24 +3,24 @@ import React, { useState, useEffect } from 'react';
 export default function SettingsPanel({ settings, onSave, onCancel, isHost, showAsModal }) {
   const [roundTime, setRoundTime] = useState(settings.roundTime || 80);
   const [maxRounds, setMaxRounds] = useState(settings.maxRounds || 3);
-  const [customWords, setCustomWords] = useState(settings.customWords?.join(', ') || '');
   const [hintCount, setHintCount] = useState(settings.hintIntervals ? settings.hintIntervals.length : 2);
   const [hintIntervals, setHintIntervals] = useState(settings.hintIntervals ? settings.hintIntervals.map(f => Math.round(f * 100)) : [33, 66]);
   const [allowUndo, setAllowUndo] = useState(settings.allowUndo ?? true);
   const [allowChat, setAllowChat] = useState(settings.allowChat ?? true);
   const [showTimerBar, setShowTimerBar] = useState(settings.showTimerBar ?? true);
   const [language, setLanguage] = useState(settings.language || 'en');
+  const [wordCount, setWordCount] = useState(settings.wordCount || 3);
 
   useEffect(() => {
     setRoundTime(settings.roundTime || 80);
     setMaxRounds(settings.maxRounds || 3);
-    setCustomWords(settings.customWords?.join(', ') || '');
     setHintCount(settings.hintIntervals ? settings.hintIntervals.length : 2);
     setHintIntervals(settings.hintIntervals ? settings.hintIntervals.map(f => Math.round(f * 100)) : [33, 66]);
     setAllowUndo(settings.allowUndo ?? true);
     setAllowChat(settings.allowChat ?? true);
     setShowTimerBar(settings.showTimerBar ?? true);
     setLanguage(settings.language || 'en');
+    setWordCount(settings.wordCount || 3);
   }, [settings]);
 
   const handleHintCountChange = (n) => {
@@ -36,17 +36,35 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
   };
 
   const handleSave = () => {
-    onSave && onSave({
-      ...settings,
+    console.log('[SettingsPanel] Save button clicked');
+    console.log('[SettingsPanel] Current settings:', {
       roundTime: Number(roundTime),
       maxRounds: Number(maxRounds),
-      customWords: customWords.split(',').map(w => w.trim()).filter(Boolean),
       hintIntervals: hintIntervals.map(v => v / 100),
       allowUndo,
       allowChat,
       showTimerBar,
       language,
+      wordCount: Number(wordCount),
     });
+    
+    const newSettings = {
+      ...settings,
+      roundTime: Number(roundTime),
+      maxRounds: Number(maxRounds),
+      hintIntervals: hintIntervals.map(v => v / 100),
+      allowUndo,
+      allowChat,
+      showTimerBar,
+      language,
+      wordCount: Number(wordCount),
+    };
+    // Remove customWords and maxPlayers if present
+    delete newSettings.customWords;
+    delete newSettings.maxPlayers;
+    
+    console.log('[SettingsPanel] Calling onSave with:', newSettings);
+    onSave && onSave(newSettings);
   };
 
   const content = (
@@ -61,10 +79,6 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
         <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost} />
       </div>
       <div style={{ marginBottom: 8 }}>
-        <label>Custom Words (comma separated): </label>
-        <input type="text" value={customWords} onChange={e => setCustomWords(e.target.value)} style={{ width: 180, marginLeft: 8 }} disabled={!isHost} />
-      </div>
-      <div style={{ marginBottom: 8 }}>
         <label>Number of Hints: </label>
         <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} style={{ width: 40, marginLeft: 8 }} disabled={!isHost} />
       </div>
@@ -75,6 +89,10 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
           <span>{hintIntervals[idx] || 0}%</span>
         </div>
       ))}
+      <div style={{ marginBottom: 8 }}>
+        <label>Word Count (choices for drawer): </label>
+        <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost} />
+      </div>
       <div className="form-check form-switch" style={{ marginBottom: 8 }}>
         <input className="form-check-input" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost} />
         <label className="form-check-label" htmlFor="allowUndo">Allow Drawing Undo</label>

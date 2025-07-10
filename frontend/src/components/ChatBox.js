@@ -16,26 +16,75 @@ export default function ChatBox({ messages, onSend, disabled }) {
   };
 
   return (
-    <div style={{ background: '#222', borderRadius: 8, padding: 8, color: '#fff', display: 'flex', flexDirection: 'column', height: 240 }}>
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
+    <div style={{ background: '#23272b', borderRadius: 10, padding: 0, color: '#f3f3fa', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 240, border: 'none', boxShadow: '0 2px 16px #0006', position: 'relative', justifyContent: 'flex-end' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 10px 0 10px', marginBottom: 0 }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ color: msg.system ? '#aaa' : msg.correct ? '#0f0' : '#fff' }}>
-            <b>{msg.name}:</b> {msg.message}
+          <div key={i} style={{ color: msg.system ? '#a7a7b3' : msg.correct ? '#1aff7c' : '#f3f3fa', fontWeight: msg.system ? 500 : 600, fontSize: 15, marginBottom: 2, wordBreak: 'break-word' }}>
+            <span style={{ fontWeight: 700 }}>{msg.name}:</span> <span style={{ fontWeight: 500 }}>{msg.message}</span>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
-      <div style={{ display: 'flex' }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '100%',
+        background: '#23272b',
+        borderTop: '1px solid #353a40',
+        padding: '10px 10px 10px 10px',
+        zIndex: 2,
+        display: 'flex',
+        alignItems: 'center',
+        boxSizing: 'border-box',
+        gap: 0,
+        // Remove sticky/absolute/positioning here
+      }}>
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
           disabled={disabled}
-          placeholder={disabled ? 'Muted...' : 'Type your guess or chat...'}
-          style={{ flex: 1, borderRadius: 4, border: '1px solid #444', padding: 6, background: '#111', color: '#fff' }}
+          placeholder={disabled ? 'Muted...' : 'Type your guess here...'}
+          style={{
+            flex: 1,
+            borderRadius: 6,
+            border: '1px solid #444',
+            outline: 'none',
+            padding: '12px 14px',
+            background: '#181a1d',
+            color: '#f3f3fa',
+            fontSize: 15,
+            boxShadow: 'none',
+            height: 40,
+            marginRight: 8,
+            transition: 'border 0.2s',
+            minWidth: 0,
+            maxWidth: '100%',
+          }}
         />
-        <button onClick={handleSend} disabled={disabled || !input.trim()} style={{ marginLeft: 6, borderRadius: 4, background: '#007bff', color: '#fff', border: 'none', padding: '6px 12px', cursor: 'pointer' }}>Send</button>
+        <button
+          onClick={handleSend}
+          disabled={disabled || !input.trim()}
+          style={{
+            borderRadius: 6,
+            background: '#6e44ff',
+            color: '#fff',
+            border: 'none',
+            padding: '0 22px',
+            height: 40,
+            fontSize: 15,
+            fontWeight: 600,
+            cursor: disabled || !input.trim() ? 'not-allowed' : 'pointer',
+            boxShadow: 'none',
+            transition: 'background 0.2s',
+            flex: 'none',
+            whiteSpace: 'nowrap',
+            minWidth: 0,
+            maxWidth: 120,
+          }}
+        >
+          Send
+        </button>
       </div>
     </div>
   );

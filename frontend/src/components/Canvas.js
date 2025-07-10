@@ -1,15 +1,11 @@
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import { useSocket } from '../contexts/SocketContext';
 
-export default function Canvas({ isDrawing, onDraw, drawingData, disabled }) {
+export default function Canvas({ isDrawing, onDraw, drawingData, disabled, color, width, tool, isEraser, setColor, setWidth, setTool, setIsEraser, onUndo, onRedo, renderControls }) {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [lastPos, setLastPos] = useState(null);
-  const [color, setColor] = useState('#fff');
-  const [width, setWidth] = useState(4);
-  const [isEraser, setIsEraser] = useState(false);
   const [localStack, setLocalStack] = useState([]);
-  const [tool, setTool] = useState('pen'); // 'pen', 'eraser', 'fill'
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
 
@@ -35,9 +31,13 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled }) {
     });
   }, [drawingData]);
 
-  // Undo stack for local actions
+  // Sync local stack with drawing data
   useEffect(() => {
-    setLocalStack(drawingData || []);
+    if (drawingData && Array.isArray(drawingData)) {
+      setLocalStack(drawingData);
+      // Clear redo stack when new data comes in
+      setRedoStack([]);
+    }
   }, [drawingData]);
 
   useEffect(() => {
@@ -62,7 +62,10 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled }) {
       const line = { from: lastPos, to: pos, color: isEraser ? '#111' : color, width };
       onDraw && onDraw(line);
       setLastPos(pos);
+      // Add to local stack for undo
       setLocalStack(stack => [...stack, line]);
+      // Clear redo stack when new drawing is added
+      setRedoStack([]);
     }
   };
   const handlePointerUp = () => {
@@ -118,54 +121,30 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled }) {
 
   // Undo last action
   const handleUndo = () => {
-    if (localStack.length > 0) {
+    console.log('[Canvas] Undo clicked, localStack length:', localStack.length);
+    if (isDrawing && localStack.length > 0) {
       const newStack = localStack.slice(0, -1);
+      const undoneLine = localStack[localStack.length - 1];
+      setUndoStack([...undoStack, undoneLine]);
       setLocalStack(newStack);
-      // Optionally, emit the new stack to backend (not implemented in backend yet)
+      setRedoStack([]);
+      console.log('[Canvas] Undo: removed line, new stack length:', newStack.length);
+      if (onDraw) onDraw({ type: 'set', stack: newStack });
     }
   };
 
-  // Controls UI
-  const controls = (
-    <div className="d-flex align-items-center justify-content-center mb-2" style={{ gap: 8 }}>
-      {/* Color buttons */}
-      {COLORS.map(c => (
-        <button
-          key={c}
-          className="btn btn-sm"
-          style={{ background: c, border: color === c ? '2px solid #0af' : '2px solid #fff', width: 24, height: 24, margin: 0, padding: 0, borderRadius: 4 }}
-          onClick={() => { setColor(c); setTool('pen'); setIsEraser(false); }}
-          disabled={disabled}
-        />
-      ))}
-      {/* Tool buttons */}
-      <button className={`btn btn-sm ${tool === 'pen' ? 'btn-primary' : ''}`} style={{ background: tool === 'pen' ? '#b39ddb' : '#fff', border: '1px solid #888', marginLeft: 8 }} onClick={() => { setTool('pen'); setIsEraser(false); }} disabled={disabled} title="Pen">✏️</button>
-      <button className={`btn btn-sm ${tool === 'eraser' ? 'btn-warning' : ''}`} style={{ marginLeft: 2 }} onClick={() => { setTool('eraser'); setIsEraser(true); }} disabled={disabled} title="Eraser">🧽</button>
-      <button className={`btn btn-sm ${tool === 'fill' ? 'btn-info' : ''}`} style={{ marginLeft: 2 }} onClick={() => { setTool('fill'); setIsEraser(false); }} disabled={disabled} title="Fill">🪣</button>
-      <button className="btn btn-sm btn-light" style={{ marginLeft: 2 }} onClick={handleUndo} disabled={disabled} title="Undo">↩️</button>
-      <button className="btn btn-sm btn-light" style={{ marginLeft: 2 }} onClick={() => {
-        if (redoStack.length > 0) {
-          const restored = redoStack[redoStack.length - 1];
-          setRedoStack(redoStack.slice(0, -1));
-          setLocalStack([...localStack, restored]);
-        }
-      }} disabled={disabled || redoStack.length === 0} title="Redo">↪️</button>
-      {/* Size buttons */}
-      {SIZES.map(s => (
-        <button
-          key={s}
-          className="btn btn-sm btn-light"
-          style={{ marginLeft: 2, width: 28, height: 28, border: width === s ? '2px solid #0af' : '1px solid #888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setWidth(s)}
-          disabled={disabled}
-        >
-          <span style={{ display: 'inline-block', background: '#222', borderRadius: '50%', width: s, height: s }} />
-        </button>
-      ))}
-      {/* Trash/clear button (future) */}
-      {/* <button className="btn btn-sm btn-danger" style={{ marginLeft: 2 }} title="Clear">🗑️</button> */}
-    </div>
-  );
+  // Redo last undone action
+  const handleRedo = () => {
+    console.log('[Canvas] Redo clicked, undoStack length:', undoStack.length);
+    if (isDrawing && undoStack.length > 0) {
+      const restored = undoStack[undoStack.length - 1];
+      const newStack = [...localStack, restored];
+      setUndoStack(undoStack.slice(0, -1));
+      setLocalStack(newStack);
+      console.log('[Canvas] Redo: restored line, new stack length:', newStack.length);
+      if (onDraw) onDraw({ type: 'set', stack: newStack });
+    }
+  };
 
   // Canvas event handlers
   const handleCanvasClick = (e) => {
@@ -184,12 +163,11 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled }) {
 
   return (
     <div>
-      {isDrawing && !disabled && controls}
       <canvas
         ref={canvasRef}
-        width={600}
+        width={480}
         height={400}
-        style={{ background: '#111', borderRadius: 12, border: '2px solid #444', touchAction: 'none', width: '100%', maxWidth: 600, display: 'block', margin: '0 auto' }}
+        style={{ background: '#111', borderRadius: 12, border: '2px solid #444', touchAction: 'none', display: 'block', margin: '0 auto', width: '100%', maxWidth: 480, height: 'auto' }}
         onMouseDown={isDrawing && tool !== 'fill' ? handlePointerDown : undefined}
         onMouseMove={isDrawing && tool !== 'fill' ? handlePointerMove : undefined}
         onMouseUp={isDrawing && tool !== 'fill' ? handlePointerUp : undefined}

@@ -1,5 +1,4 @@
 import React from 'react';
-import Avatar from 'avataaars';
 
 export default function PlayerList({ players, hostId, drawerId, myUserId, onMute, onKick }) {
   // Sort by score descending
@@ -10,15 +9,24 @@ export default function PlayerList({ players, hostId, drawerId, myUserId, onMute
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {sorted.map((p, i) => (
           <li key={p.userId} style={{ display: 'flex', alignItems: 'center', marginBottom: 6, fontWeight: p.userId === myUserId ? 'bold' : 'normal', background: p.userId === myUserId ? '#1a2a3a' : 'none', borderRadius: 6, padding: '2px 4px' }}>
-            {typeof p.avatar === 'object' && p.avatar !== null ? (
-              <span style={{ marginRight: 8 }}><Avatar style={{ width: 32, height: 32 }} {...p.avatar} /></span>
-            ) : (
-              <span style={{ fontSize: 24, marginRight: 8 }}>{p.avatar}</span>
-            )}
+            {/* Avatar Display */}
+            <span style={{ 
+              fontSize: 24, 
+              marginRight: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '8px',
+              border: p.userId === drawerId ? '2.5px solid #1aff7c' : '2px solid #007bff' // Green for drawer, blue for others
+            }}>
+              {p.avatar && p.avatar.emoji ? p.avatar.emoji : '👤'}
+            </span>
             <span style={{ color: p.userId === drawerId ? '#0af' : '#fff', flex: 1 }}>{p.name}</span>
             <span style={{ marginLeft: 8, color: '#ffd700', fontWeight: 'bold', minWidth: 40, textAlign: 'right' }}>{p.score} pts</span>
             {p.userId === hostId && <span title="Host" style={{ marginLeft: 6, color: '#ff0' }}>★</span>}
-            {p.userId === drawerId && <span title="Drawing" style={{ marginLeft: 6, color: '#0af' }}>✏️</span>}
             {myUserId === hostId && p.userId !== myUserId && (
               <>
                 <button onClick={() => onMute(p.userId)} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#fa0', cursor: 'pointer' }}>🔇</button>

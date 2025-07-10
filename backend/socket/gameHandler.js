@@ -123,35 +123,12 @@ async function startRound(io, code) {
   clearRoomTimers(code);
   const room = await Room.findOne({ code });
   if (!room) return;
-  // HARD GUARD: If game is ended or rounds exceeded, do nothing
-  if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
-    room.status = 'ended';
-    room.gameState.phase = 'ended';
-    room.gameState.round = room.currentRound;
-    await room.save();
-    console.log(`[startRound] ABORT: Game ended or rounds exceeded (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds}, status=${room.status})`);
-    await emitGameEnd(io, code, room);
-    return;
-  }
-  // If all players have drawn, increment round and reset drawerIndex
-  if (room.drawerIndex >= room.playerOrder.length) {
-    room.currentRound++;
-    room.drawerIndex = 0;
-    room.gameState.round = room.currentRound;
-    // End game if all rounds complete (check immediately after increment)
-    if (room.currentRound > room.settings.maxRounds) {
-      room.status = 'ended';
-      room.gameState.phase = 'ended';
-      room.gameState.round = room.currentRound;
-      await room.save();
-      console.log(`[startRound] Emitting game-end (currentRound > maxRounds)`);
-      await emitGameEnd(io, code, room);
-      return;
-    }
-  }
-  room.gameState.round = room.currentRound;
+
+  // Rotate drawer
   const drawerId = room.playerOrder[room.drawerIndex];
-  const wordChoices = shuffleArray([...words]).slice(0, 3);
+  const wordCount = room.settings.wordCount || 3;
+  const wordChoices = shuffleArray([...words]).slice(0, wordCount);
+
   room.gameState = {
     ...room.gameState,
     round: room.currentRound,
@@ -161,9 +138,10 @@ async function startRound(io, code) {
     currentWord: '',
     guesses: [],
     phase: 'selecting-word',
-    timer: 10, // word select timer
+    timer: 10,
     hint: '',
   };
+
   await room.save();
   io.to(code).emit('room:update', room);
   io.to(code).emit('round-start', {
@@ -173,6 +151,7 @@ async function startRound(io, code) {
     maxRounds: room.settings.maxRounds,
     playerOrder: room.playerOrder,
   });
+
   roomTimers[code] = setTimeout(() => {
     autoSelectWord(io, code);
   }, 10000);
@@ -182,9 +161,13 @@ async function autoSelectWord(io, code) {
   clearRoomTimers(code); // Always clear timers before proceeding
   const room = await Room.findOne({ code });
   if (!room) return;
-  // HARD GUARD: If game is ended or rounds exceeded, do nothing
-  if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
-    console.log(`[autoSelectWord] ABORT: Game ended or rounds exceeded (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds}, status=${room.status})`);
+  if (room.status === 'ended' || room.currentRound >= room.settings.maxRounds) {
+    room.status = 'ended';
+    room.gameState.phase = 'ended';
+    const safeMaxRounds = typeof room.settings.maxRounds === 'number' && !isNaN(room.settings.maxRounds) ? room.settings.maxRounds : 1;
+    room.gameState.round = safeMaxRounds;
+    await room.save();
+    await emitGameEnd(io, code, room);
     return;
   }
   const word = room.gameState.wordChoices[0];
@@ -197,12 +180,13 @@ async function autoSelectWord(io, code) {
 // Utility: Randomized hint generator
 function getHintRandom(word, level, revealedIndexes) {
   const revealable = word.split('').map((c, i) => (c !== ' ' ? i : null)).filter(i => i !== null);
-  const numToReveal = Math.floor(revealable.length * (level / 3));
-  while (revealedIndexes.length < numToReveal) {
-    const idx = revealable[Math.floor(Math.random() * revealable.length)];
-    if (!revealedIndexes.includes(idx)) {
-      revealedIndexes.push(idx);
-    }
+  // Reveal only one new letter per interval
+  if (revealedIndexes.length < revealable.length) {
+    let idx;
+    do {
+      idx = revealable[Math.floor(Math.random() * revealable.length)];
+    } while (revealedIndexes.includes(idx));
+    revealedIndexes.push(idx);
   }
   return word
     .split('')
@@ -211,14 +195,20 @@ function getHintRandom(word, level, revealedIndexes) {
 }
 
 async function startDrawingPhase(io, code, word) {
-  console.log('startDrawingPhase called for code:', code, 'with word:', word);
   clearRoomTimers(code);
   const room = await Room.findOne({ code });
   if (!room) return;
-  if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
-    console.log(`[startDrawingPhase] ABORT: Game ended or rounds exceeded (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds}, status=${room.status})`);
+  if (!room || room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
+    room.status = 'ended';
+    room.gameState.phase = 'ended';
+    room.gameState.round = room.settings.maxRounds;
+    await room.save();
+    await emitGameEnd(io, code, room);
     return;
   }
+  
+  
+  console.log('startDrawingPhase called for code:', code, 'with word:', word);
   room.gameState.currentWord = word;
   room.gameState.phase = 'drawing';
   room.gameState.timer = room.settings.roundTime;
@@ -236,21 +226,21 @@ async function startDrawingPhase(io, code, word) {
   });
   // Dynamic randomized hint system
   const roundTime = room.settings.roundTime;
-  const hintIntervals = [Math.floor(roundTime / 3), Math.floor((2 * roundTime) / 3), 0];
+  // Use hintIntervals from settings, convert fractions to seconds, sort descending
+  const hintIntervals = (room.settings.hintIntervals || [0.33, 0.66])
+    .map(f => Math.floor(roundTime * f))
+    .sort((a, b) => b - a);
   let revealedIndexes = [];
   let hintLevel = 0;
   roomTimers[code] = setInterval(async () => {
     const room = await Room.findOne({ code });
     if (!room) return;
-    if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
-      clearRoomTimers(code);
-      return;
-    }
+    if (room.status === 'ended') { clearRoomTimers(code); return; }
     room.gameState.timer--;
     await room.save();
     io.to(code).emit('timer-update', { timeLeft: room.gameState.timer });
     // Reveal next hint at each interval
-    if (hintLevel < 3 && room.gameState.timer === hintIntervals[hintLevel]) {
+    if (hintLevel < hintIntervals.length && room.gameState.timer === hintIntervals[hintLevel]) {
       hintLevel++;
       room.gameState.hintLevel = hintLevel;
       const hint = getHintRandom(word, hintLevel, revealedIndexes);
@@ -259,23 +249,27 @@ async function startDrawingPhase(io, code, word) {
       // Only emit to guessers (not drawer)
       const guessers = room.players.filter(p => p.userId !== room.gameState.drawingPlayerId);
       let delivered = 0;
+      console.log(`[HINT] Timer triggered for room ${code}, hintLevel=${hintLevel}, hint='${hint}'`);
       guessers.forEach(p => {
         if (p.socketId) {
           io.to(p.socketId).emit('hint-update', { hint });
           delivered++;
+          console.log(`[HINT] Sent to guesser ${p.userId} (socketId=${p.socketId})`);
+        } else {
+          console.log(`[HINT] No socketId for guesser ${p.userId}`);
         }
       });
       if (delivered === 0) {
         // Fallback: emit to room (all guessers will see, including drawer, but better than nothing)
         io.to(code).emit('hint-update', { hint });
-        console.log(`[hint-update] Fallback: emitted to room ${code}`);
+        console.log(`[HINT] Fallback: emitted to room ${code}`);
       } else {
-        console.log(`[hint-update] Sent to ${delivered} guessers in room ${code}`);
+        console.log(`[HINT] Sent to ${delivered} guessers in room ${code}`);
       }
     }
     if (room.gameState.timer <= 0) {
       clearRoomTimers(code);
-      if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) return;
+      if (room.status === 'ended') return;
       endRound(io, code);
     }
   }, 1000);
@@ -307,16 +301,8 @@ async function endRound(io, code) {
   clearRoomTimers(code);
   const room = await Room.findOne({ code });
   if (!room) return;
-  // HARD GUARD: If game is ended or rounds exceeded, do nothing
-  if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
-    room.status = 'ended';
-    room.gameState.phase = 'ended';
-    room.gameState.round = room.currentRound;
-    await room.save();
-    console.log(`[endRound] ABORT: Game ended or rounds exceeded (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds}, status=${room.status})`);
-    await emitGameEnd(io, code, room);
-    return;
-  }
+
+  // Normal round end logic
   room.gameState.phase = 'round-end';
   // Award drawer points: e.g., 500 * number of correct guessers
   const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
@@ -329,20 +315,10 @@ async function endRound(io, code) {
     scores: room.players.map(p => ({ userId: p.userId, score: p.score })),
     guesses: room.gameState.guesses,
   });
-  console.log(`[endRound] Emitted round-end with updated scores for code: ${code}`);
-  // Next round or end game after short pause
   setTimeout(async () => {
     const latestRoom = await Room.findOne({ code });
     if (!latestRoom) return;
-    if (latestRoom.status === 'ended' || latestRoom.currentRound > latestRoom.settings.maxRounds) {
-      latestRoom.status = 'ended';
-      latestRoom.gameState.phase = 'ended';
-      latestRoom.gameState.round = latestRoom.currentRound;
-      await latestRoom.save();
-      console.log(`[endRound->setTimeout] ABORT: Game ended or rounds exceeded (currentRound=${latestRoom.currentRound}, maxRounds=${latestRoom.settings.maxRounds}, status=${latestRoom.status})`);
-      await emitGameEnd(io, code, latestRoom);
-      return;
-    }
+    if (latestRoom.status === 'ended') return;
     nextRoundOrEnd(io, code);
   }, 4000);
 }
@@ -350,32 +326,28 @@ async function endRound(io, code) {
 async function nextRoundOrEnd(io, code) {
   const room = await Room.findOne({ code });
   if (!room) return;
-  // HARD GUARD: If game is ended or rounds exceeded, do nothing
+
+  room.drawerIndex++;
+
+  // If all players have drawn, increment round and reset drawerIndex
+  if (room.drawerIndex >= room.playerOrder.length) {
+    room.currentRound++;
+    room.drawerIndex = 0;
+    room.gameState.round = room.currentRound;
+  }
+
+  // End game if all rounds complete (after all players have drawn in the last round)
   if (room.status === 'ended' || room.currentRound > room.settings.maxRounds) {
     room.status = 'ended';
     room.gameState.phase = 'ended';
     room.gameState.round = room.currentRound;
     await room.save();
-    console.log(`[nextRoundOrEnd] ABORT: Game ended or rounds exceeded (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds}, status=${room.status})`);
+    console.log(`[nextRoundOrEnd] Game ended at round limit (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds})`);
     await emitGameEnd(io, code, room);
     return;
   }
-  room.drawerIndex++;
-  if (room.drawerIndex >= room.playerOrder.length) {
-    room.currentRound++;
-    room.drawerIndex = 0;
-    room.gameState.round = room.currentRound;
-    if (room.currentRound > room.settings.maxRounds) {
-      room.status = 'ended';
-      room.gameState.phase = 'ended';
-      room.gameState.round = room.currentRound;
-      await room.save();
-      console.log(`[nextRoundOrEnd] Emitting game-end (currentRound > maxRounds)`);
-      await emitGameEnd(io, code, room);
-      return;
-    }
-  }
-  room.gameState.round = room.currentRound;
-  await room.save();
+
+  await room.save(); // save changes before next round
   startRound(io, code);
-} 
+}
+

@@ -37,14 +37,21 @@ const roomSchema = new mongoose.Schema({
     maxPlayers: { type: Number, default: 8 },
     roundTime: { type: Number, default: 80 },
     language: { type: String, default: 'en' },
-    customWords: [String],
-    hintIntervals: { type: [Number], default: [0.33, 0.66] }, // Fractions of roundTime
+    customWords: { type: [String], default: [] },
+    hintIntervals: { type: [Number], default: [0.33, 0.66] },
+    maxRounds: { type: Number, default: 3 },
+    wordCount: { type: Number, default: 3 },
+    allowUndo: { type: Boolean, default: true },
+    allowChat: { type: Boolean, default: true },
+    showTimerBar: { type: Boolean, default: true },
   },
   status: { type: String, default: 'waiting' }, // waiting, in-progress, ended
   currentRound: { type: Number, default: 1 },
   drawerIndex: { type: Number, default: 0 },
   playerOrder: [String], // userIds in drawing order
   createdAt: { type: Date, default: Date.now },
+}, {
+  versionKey: false  // ✅ Disable Mongoose versioning to avoid VersionError
 });
 
-module.exports = mongoose.model('Room', roomSchema); 
+module.exports = mongoose.model('Room', roomSchema);
