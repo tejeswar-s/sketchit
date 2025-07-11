@@ -76,6 +76,7 @@ export default function GameRoomPage() {
   const { user, room, setRoom, gameState, setGameState, leaderboard, setLeaderboard } = useGame();
   const socket = useSocket();
   const [drawingData, setDrawingData] = useState([]);
+  const [tempStroke, setTempStroke] = useState([]); // For real-time drawing
   const [messages, setMessages] = useState([]);
   const [timeLeft, setTimeLeft] = useState(0);
   const [hint, setHint] = useState('');
@@ -106,18 +107,27 @@ export default function GameRoomPage() {
   const [localStack, setLocalStack] = useState([]);
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
+  // Sync localStack with drawingData so undo button activates after drawing
+  useEffect(() => {
+    setLocalStack(drawingData);
+  }, [drawingData]);
   // Chat input state
   const [input, setInput] = useState('');
 
   // Undo last action
   const handleUndo = () => {
-    if (isDrawer && localStack.length > 0) {
-      const newStack = localStack.slice(0, -1);
-      const undoneLine = localStack[localStack.length - 1];
-      setUndoStack([...undoStack, undoneLine]);
-      setLocalStack(newStack);
-      setRedoStack([]);
-      if (handleDraw) handleDraw({ type: 'set', stack: newStack });
+    if (isDrawer && drawingData.length > 0) {
+      // Remove last group (stroke/fill) or segment if only segments exist
+      let newData = [...drawingData];
+      // If last is a stroke group, remove it; else, remove last segment
+      if (newData[newData.length - 1]?.type === 'stroke' || newData[newData.length - 1]?.type === 'fill') {
+        newData = newData.slice(0, -1);
+      } else {
+        // Remove all trailing segments (shouldn't happen, but fallback)
+        while (newData.length && !newData[newData.length - 1].type) newData.pop();
+      }
+      setDrawingData(newData);
+      socket.emit('draw-data', { code: room.code, data: { type: 'set', stack: newData } });
     }
   };
   // Redo last undone action
@@ -370,13 +380,19 @@ export default function GameRoomPage() {
   };
 
   const handleDraw = (line) => {
-    if (line && line.type === 'set') {
-      setDrawingData(line.stack);
-      socket.emit('draw-data', { code: room.code, data: { type: 'set', stack: line.stack } });
-    } else {
-      setDrawingData(data => [...data, line]);
-      socket.emit('draw-data', { code: room.code, data: line });
-    }
+    // Real-time: add segment to tempStroke and drawingData
+    setTempStroke(stroke => [...stroke, line]);
+    setDrawingData(data => [...data, line]);
+    socket.emit('draw-data', { code: room.code, data: line });
+  };
+  const handleStrokeEnd = (stroke) => {
+    // Remove tempStroke segments from drawingData, then add the grouped stroke
+    setDrawingData(data => {
+      const withoutTemp = data.slice(0, -tempStroke.length);
+      return [...withoutTemp, stroke];
+    });
+    setTempStroke([]);
+    socket.emit('draw-data', { code: room.code, data: stroke });
   };
 
   // Save settings handler
@@ -419,7 +435,7 @@ export default function GameRoomPage() {
 
   // Use mergedPlayers for PlayerList and ScoreBoard
   return (
-    <div className="container game-room-responsive" style={{ maxWidth: 1100, margin: '24px auto', background: '#23272b', borderRadius: 16, padding: 16, boxShadow: '0 4px 32px #0008', overflowX: 'hidden', position: 'relative' }}>
+    <div className="container game-room-responsive" style={{ width: '100%', margin: 0, background: '#23272b', borderRadius: 0, padding: 0, boxShadow: 'none', position: 'relative', minHeight: '100vh', boxSizing: 'border-box' }}>
       {/* Centered SketchIt title with purple paint brush */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
         <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -476,10 +492,14 @@ export default function GameRoomPage() {
             : <button className="btn btn-danger" onClick={handleLeaveRoom}>Leave Room</button>}
         </div>
       </Modal>
+      {/* Settings Modal (view only for all users) */}
+      <Modal open={showSettings} onClose={() => setShowSettings(false)} title="Room Settings">
+        <SettingsPanel settings={room?.settings || {}} isHost={false} viewOnly={true} showAsModal={false} />
+      </Modal>
       {/* Main Responsive Flex Row */}
-      <div style={{ display: 'flex', gap: 20, padding: '0 12px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 16, padding: '0 16px', alignItems: 'flex-start', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
         {/* Left: Players/Scores */}
-        <div style={{ flex: '1 1 0', minWidth: 180, maxWidth: 300, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start' }}>
+        <div style={{ flex: '1 1 0', minWidth: 160, maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
           <PlayerList
             players={mergedPlayers}
             hostId={room?.players?.find(p => p.isHost)?.userId}
@@ -490,9 +510,10 @@ export default function GameRoomPage() {
           />
         </div>
         {/* Center: Canvas */}
-        <div style={{ flex: '2 1 0', minWidth: 0, maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', minHeight: 0, margin: '0 6px', background: '#181a1d', borderRadius: 18, boxShadow: '0 2px 24px #0008', padding: '10px 0', gap: 20, justifyContent: 'center' }}>
+        <div style={{ flex: '2 1 0', minWidth: 0, maxWidth: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', minHeight: 0, margin: '0 6px', background: '#181a1d', borderRadius: 18, boxShadow: '0 2px 24px #0008', padding: '10px 0', gap: 20, justifyContent: 'center', boxSizing: 'border-box' }}>
           {/* Always reserve space for the canvas/overlay to prevent layout jump */}
-          <div style={{ width: '100%', maxWidth: 480, aspectRatio: '6/5', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          {/* TODO: For canvas precision, ensure Canvas uses ref/clientWidth/clientHeight for drawing calculations */}
+          <div style={{ width: '100%', maxWidth: 700, aspectRatio: '6/5', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
             {/* Show WordPopup as overlay over drawing section during word selection */}
             {shouldShowWordPopup && isDrawer ? (
               <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
@@ -504,6 +525,7 @@ export default function GameRoomPage() {
               <Canvas
                 isDrawing={isDrawer && phase === 'drawing'}
                 onDraw={handleDraw}
+                onStrokeEnd={handleStrokeEnd}
                 drawingData={drawingData}
                 disabled={!(isDrawer && phase === 'drawing')}
                 color={color}
@@ -533,9 +555,7 @@ export default function GameRoomPage() {
               setIsEraser={setIsEraser}
               disabled={!(isDrawer && phase === 'drawing')}
               onUndo={handleUndo}
-              onRedo={handleRedo}
               canUndo={localStack.length > 0}
-              canRedo={undoStack.length > 0}
             />
           )}
           {/* Animated round summary modal */}
@@ -568,7 +588,7 @@ export default function GameRoomPage() {
           </Modal>
         </div>
         {/* Right: Chat */}
-        <div style={{ flex: '1 1 0', minWidth: 180, maxWidth: 300, display: 'flex', flexDirection: 'column', minHeight: 420, height: '100%', background: '#23272b', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '0', justifyContent: 'flex-end', alignSelf: 'stretch' }}>
+        <div style={{ flex: '1 1 0', minWidth: 220, maxWidth: 440, display: 'flex', flexDirection: 'column', minHeight: 420, height: '100%', background: '#23272b', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '0', justifyContent: 'flex-end', alignSelf: 'stretch', boxSizing: 'border-box' }}>
           {/* Messages area */}
           <div style={{ flex: '1 1 0', maxHeight: 320, overflowY: 'auto', padding: '12px 10px 0 10px', marginBottom: 0 }}>
             {messages.map((msg, i) => (
@@ -583,6 +603,7 @@ export default function GameRoomPage() {
                   borderRadius: 8,
                   padding: msg.system ? '2px 0' : '7px 12px',
                   wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
                   boxShadow: msg.correct ? '0 0 6px #1aff7c33' : 'none',
                   border: msg.correct ? '1px solid #1aff7c55' : 'none',
                   transition: 'background 0.2s',
@@ -591,6 +612,7 @@ export default function GameRoomPage() {
                   gap: 8,
                   cursor: msg.system ? 'default' : 'pointer',
                   position: 'relative',
+                  flexWrap: 'wrap',
                 }}
                 onMouseOver={e => { if (!msg.system) e.currentTarget.style.background = 'rgba(167,123,255,0.10)'; }}
                 onMouseOut={e => { if (!msg.system) e.currentTarget.style.background = msg.correct ? 'rgba(26,255,124,0.08)' : 'rgba(255,255,255,0.03)'; }}
@@ -598,9 +620,12 @@ export default function GameRoomPage() {
                 {!msg.system && (
                   <span style={{ fontWeight: 700, color: '#a7bfff', marginRight: 6 }}>{msg.name}:</span>
                 )}
-                <span style={{ fontWeight: 500 }}>{msg.message}</span>
-                {msg.correct && !msg.system && (
-                  <span style={{ marginLeft: 8, fontSize: 16, color: '#1aff7c' }}>✔️</span>
+                {msg.correct && !msg.system ? (
+                  <span style={{ fontWeight: 500 }}>
+                    guessed the correct word!
+                  </span>
+                ) : (
+                  <span style={{ fontWeight: 500 }}>{msg.message}</span>
                 )}
               </div>
             ))}
@@ -684,7 +709,7 @@ export default function GameRoomPage() {
   );
 }
 
-function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEraser, setIsEraser, disabled, onUndo, onRedo, canUndo, canRedo }) {
+function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEraser, setIsEraser, disabled, onUndo, canUndo }) {
   const COLORS = [
     '#7c2323', '#000', '#fff', '#e53935', '#fbc02d', '#43a047', '#1e88e5', '#8e24aa', '#00bcd4', '#ff9800', '#795548', '#c0c0c0'
   ];
@@ -722,8 +747,7 @@ function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEra
         <button className={`btn btn-sm ${tool === 'pen' ? 'btn-primary' : ''}`} style={{ background: tool === 'pen' ? '#b39ddb' : '#fff', border: '1px solid #888' }} onClick={() => { setTool('pen'); setIsEraser(false); }} disabled={disabled} title="Pen">✏️</button>
         <button className={`btn btn-sm ${tool === 'eraser' ? 'btn-warning' : ''}`} onClick={() => { setTool('eraser'); setIsEraser(true); }} disabled={disabled} title="Eraser">🧽</button>
         <button className={`btn btn-sm ${tool === 'fill' ? 'btn-info' : ''}`} onClick={() => { setTool('fill'); setIsEraser(false); }} disabled={disabled} title="Fill">🪣</button>
-        <button className="btn btn-sm btn-light" onClick={onUndo} disabled={disabled || !canUndo} title="Undo">↩️</button>
-        <button className="btn btn-sm btn-light" onClick={onRedo} disabled={disabled || !canRedo} title="Redo">↪️</button>
+        <button className="btn btn-sm btn-light" onClick={onUndo} disabled={disabled || !canUndo} title="Undo" style={{ opacity: (disabled || !canUndo) ? 0.5 : 1, background: (disabled || !canUndo) ? '#444' : '#fff', color: '#23272b', fontWeight: 700, border: '1px solid #888' }}>↩️</button>
       </div>
       {/* Size buttons */}
       <div style={{ display: 'flex', gap: 4 }}>

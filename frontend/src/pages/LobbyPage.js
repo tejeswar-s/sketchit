@@ -90,11 +90,26 @@ export default function LobbyPage() {
                   {isHost && (
                     <button
                       onClick={handleStart}
-                      className="modern-lobby-btn-dark w-100 mt-4 animate__animated animate__pulse animate__infinite"
+                      className="modern-lobby-btn w-100 mt-4 animate__animated animate__pulse animate__infinite"
                       disabled={showSettingsSaved === true}
-                      style={{ fontWeight: 700, fontSize: 22, borderRadius: 16, padding: '18px 0', background: 'linear-gradient(90deg, #6e44ff 0%, #a777e3 100%)', border: 'none', color: '#fff', letterSpacing: 1, boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33', transition: 'background 0.3s, color 0.3s, transform 0.18s, box-shadow 0.3s', marginTop: 18 }}
-                      onMouseEnter={e => { e.target.style.background = 'linear-gradient(90deg, #a777e3 0%, #8ec5fc 100%)'; e.target.style.color = '#23272b'; e.target.style.transform = 'scale(1.04)'; e.target.style.boxShadow = '0 2px 16px #a777e388, 0 0 8px #8ec5fc55'; }}
-                      onMouseLeave={e => { e.target.style.background = 'linear-gradient(90deg, #6e44ff 0%, #a777e3 100%)'; e.target.style.color = '#fff'; e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = '0 2px 12px #a777e344, 0 0 4px #6e44ff33'; }}
+                      style={{
+                        fontWeight: 800,
+                        fontSize: 26,
+                        borderRadius: 20,
+                        padding: '22px 0',
+                        background: 'linear-gradient(90deg, #8ec5fc 0%, #6e44ff 100%)',
+                        border: 'none',
+                        color: '#fff',
+                        letterSpacing: 2,
+                        boxShadow: '0 4px 24px #6e44ff44, 0 0 8px #8ec5fc33',
+                        transition: 'background 0.3s, color 0.3s, transform 0.18s, box-shadow 0.3s',
+                        marginTop: 18,
+                        textShadow: '0 2px 8px #23272b44',
+                        outline: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={e => { e.target.style.background = 'linear-gradient(90deg, #a777e3 0%, #8ec5fc 100%)'; e.target.style.color = '#23272b'; e.target.style.transform = 'scale(1.06)'; e.target.style.boxShadow = '0 4px 32px #a777e388, 0 0 12px #8ec5fc55'; }}
+                      onMouseLeave={e => { e.target.style.background = 'linear-gradient(90deg, #8ec5fc 0%, #6e44ff 100%)'; e.target.style.color = '#fff'; e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = '0 4px 24px #6e44ff44, 0 0 8px #8ec5fc33'; }}
                     >
                       🚀 Start Game
                     </button>

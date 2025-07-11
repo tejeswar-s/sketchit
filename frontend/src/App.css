@@ -1,12 +1,37 @@
+/* Add this to the top for Google Fonts suggestion:
+   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;700&family=Orbitron:wght@500;700&display=swap');
+*/
+
 /* Responsive and modern styles for the whole app */
 body,
 html {
     min-height: 100vh;
     background: linear-gradient(135deg, #23272b 0%, #1a1d20 100%);
     color: #fff;
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-family: 'Rajdhani', 'Orbitron', 'Inter', 'Segoe UI', Arial, sans-serif;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
+}
+
+.homepage-container {
+    min-height: 80vh;
+    min-width: 340px;
+    max-width: 420px;
+    margin: 0 auto;
+    background: rgba(35, 39, 43, 0.92);
+    border-radius: 28px;
+    padding: 24px 32px 18px 32px;
+    box-shadow: 0 0 32px 8px #a777e355, 0 0 0 8px #6e44ff22, 0 8px 40px #6e44ff22, 0 0 24px #a777e322;
+    position: relative;
+    overflow: visible;
+    backdrop-filter: blur(6px) saturate(1.2);
+    border: 1.5px solid #6e44ff44;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.2s;
 }
 
 .container {
@@ -31,7 +56,10 @@ html {
 
 .container.homepage-container svg.homepage-bg {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 0;
     pointer-events: none;
 }
@@ -147,6 +175,7 @@ textarea,
     font-size: 1.08rem;
     transition: border 0.18s;
 }
+
 input:focus,
 select:focus,
 textarea:focus,
@@ -192,35 +221,53 @@ textarea:focus,
 }
 
 .shine-effect {
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
+
 .shine-effect::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -75%;
-  width: 50%; height: 100%;
-  background: linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.38) 60%, rgba(255,255,255,0.18) 100%);
-  transform: skewX(-20deg);
-  transition: none;
-  pointer-events: none;
-  z-index: 2;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.38) 60%, rgba(255, 255, 255, 0.18) 100%);
+    transform: skewX(-20deg);
+    transition: none;
+    pointer-events: none;
+    z-index: 2;
 }
+
 .shine-effect:hover::before {
-  animation: shine-move-in 0.7s forwards;
+    animation: shine-move-in 0.7s forwards;
 }
+
 .shine-effect:active::before {
-  animation: none;
+    animation: none;
 }
+
 @keyframes shine-move-in {
-  0% { left: -75%; }
-  100% { left: 120%; }
+    0% {
+        left: -75%;
+    }
+
+    100% {
+        left: 120%;
+    }
 }
+
 .shine-effect.out::before {
-  animation: shine-move-out 0.7s forwards;
+    animation: shine-move-out 0.7s forwards;
 }
+
 @keyframes shine-move-out {
-  0% { left: 120%; }
-  100% { left: -75%; }
+    0% {
+        left: 120%;
+    }
+
+    100% {
+        left: -75%;
+    }
 }

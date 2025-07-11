@@ -1,13 +1,34 @@
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import { useSocket } from '../contexts/SocketContext';
 
-export default function Canvas({ isDrawing, onDraw, drawingData, disabled, color, width, tool, isEraser, setColor, setWidth, setTool, setIsEraser, onUndo, onRedo, renderControls }) {
+export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, disabled, color, width, tool, isEraser, setColor, setWidth, setTool, setIsEraser, onUndo, onRedo, renderControls }) {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [lastPos, setLastPos] = useState(null);
+  const [currentStroke, setCurrentStroke] = useState([]); // Track segments in current stroke
   const [localStack, setLocalStack] = useState([]);
-  const [undoStack, setUndoStack] = useState([]);
-  const [redoStack, setRedoStack] = useState([]);
+  // No redo stack needed
+  const [canvasSize, setCanvasSize] = useState({ width: 480, height: 400 });
+
+  // Dynamically update canvas size to match rendered size
+  useEffect(() => {
+    const updateSize = () => {
+      if (canvasRef.current) {
+        setCanvasSize({
+          width: canvasRef.current.clientWidth,
+          height: canvasRef.current.clientHeight
+        });
+      }
+    };
+    updateSize();
+    const resizeObserver = new window.ResizeObserver(updateSize);
+    if (canvasRef.current) resizeObserver.observe(canvasRef.current);
+    window.addEventListener('resize', updateSize);
+    return () => {
+      if (canvasRef.current) resizeObserver.unobserve(canvasRef.current);
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
 
   // Predefined color palette
   const COLORS = [
@@ -20,23 +41,46 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled, color
   useEffect(() => {
     if (!drawingData || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
-    ctx.clearRect(0, 0, 600, 400);
-    drawingData.forEach(line => {
-      ctx.strokeStyle = line.color || '#fff';
-      ctx.lineWidth = line.width || 3;
-      ctx.beginPath();
-      ctx.moveTo(line.from.x, line.from.y);
-      ctx.lineTo(line.to.x, line.to.y);
-      ctx.stroke();
+    ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+    drawingData.forEach(action => {
+      if (action.type === 'fill') {
+        floodFill(ctx, action.x, action.y, action.color);
+      } else if (action.type === 'stroke') {
+        action.lines.forEach(line => {
+          ctx.strokeStyle = line.color || '#fff';
+          ctx.lineWidth = line.width || 3;
+          ctx.beginPath();
+          ctx.moveTo(line.from.x, line.from.y);
+          ctx.lineTo(line.to.x, line.to.y);
+          ctx.stroke();
+        });
+      } else if (!action.type) {
+        // For legacy or real-time segments
+        ctx.strokeStyle = action.color || '#fff';
+        ctx.lineWidth = action.width || 3;
+        ctx.beginPath();
+        ctx.moveTo(action.from.x, action.from.y);
+        ctx.lineTo(action.to.x, action.to.y);
+        ctx.stroke();
+      }
     });
-  }, [drawingData]);
+    // Draw currentStroke in real time
+    if (currentStroke && currentStroke.length > 0) {
+      currentStroke.forEach(line => {
+        ctx.strokeStyle = line.color || '#fff';
+        ctx.lineWidth = line.width || 3;
+        ctx.beginPath();
+        ctx.moveTo(line.from.x, line.from.y);
+        ctx.lineTo(line.to.x, line.to.y);
+        ctx.stroke();
+      });
+    }
+  }, [drawingData, canvasSize, currentStroke]);
 
   // Sync local stack with drawing data
   useEffect(() => {
     if (drawingData && Array.isArray(drawingData)) {
       setLocalStack(drawingData);
-      // Clear redo stack when new data comes in
-      setRedoStack([]);
     }
   }, [drawingData]);
 
@@ -50,38 +94,45 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled, color
     return () => socket.off('fill', handleFill);
   }, [socket]);
 
+  const getRelativePos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    // Scale to canvas coordinate system
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
+    return { x: x * scaleX, y: y * scaleY };
+  };
+
   const handlePointerDown = (e) => {
     if (disabled) return;
     setDrawing(true);
-    setLastPos(getPos(e));
+    setLastPos(getRelativePos(e));
+    setCurrentStroke([]); // Start a new stroke
   };
   const handlePointerMove = (e) => {
     if (!drawing || disabled) return;
-    const pos = getPos(e);
+    const pos = getRelativePos(e);
     if (lastPos && pos) {
       const line = { from: lastPos, to: pos, color: isEraser ? '#111' : color, width };
-      onDraw && onDraw(line);
+      onDraw && onDraw(line); // Real-time drawing
       setLastPos(pos);
-      // Add to local stack for undo
-      setLocalStack(stack => [...stack, line]);
-      // Clear redo stack when new drawing is added
-      setRedoStack([]);
+      setCurrentStroke(stroke => [...stroke, line]);
     }
   };
   const handlePointerUp = () => {
     setDrawing(false);
     setLastPos(null);
-  };
-  const getPos = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    return { x, y };
+    if (currentStroke.length > 0) {
+      // Notify parent of completed stroke for undo/redo
+      onStrokeEnd && onStrokeEnd({ type: 'stroke', lines: currentStroke });
+      setCurrentStroke([]);
+    }
   };
 
   // Flood fill algorithm for fill bucket
   const floodFill = (ctx, x, y, fillColor) => {
-    const imageData = ctx.getImageData(0, 0, 600, 400);
+    const imageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
     const data = imageData.data;
     const width = imageData.width;
     const height = imageData.height;
@@ -121,43 +172,22 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled, color
 
   // Undo last action
   const handleUndo = () => {
-    console.log('[Canvas] Undo clicked, localStack length:', localStack.length);
-    if (isDrawing && localStack.length > 0) {
+    if (localStack.length > 0) {
       const newStack = localStack.slice(0, -1);
-      const undoneLine = localStack[localStack.length - 1];
-      setUndoStack([...undoStack, undoneLine]);
       setLocalStack(newStack);
-      setRedoStack([]);
-      console.log('[Canvas] Undo: removed line, new stack length:', newStack.length);
       if (onDraw) onDraw({ type: 'set', stack: newStack });
     }
   };
 
-  // Redo last undone action
-  const handleRedo = () => {
-    console.log('[Canvas] Redo clicked, undoStack length:', undoStack.length);
-    if (isDrawing && undoStack.length > 0) {
-      const restored = undoStack[undoStack.length - 1];
-      const newStack = [...localStack, restored];
-      setUndoStack(undoStack.slice(0, -1));
-      setLocalStack(newStack);
-      console.log('[Canvas] Redo: restored line, new stack length:', newStack.length);
-      if (onDraw) onDraw({ type: 'set', stack: newStack });
-    }
-  };
+  // Redo removed
 
   // Canvas event handlers
   const handleCanvasClick = (e) => {
     if (tool === 'fill' && !disabled) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      if (isDrawing && socket) {
-        socket.emit('fill', { x, y, color });
-      }
-      // Optionally, apply locally for drawer for instant feedback
-      const ctx = canvasRef.current.getContext('2d');
-      floodFill(ctx, x, y, color);
+      const pos = getRelativePos(e);
+      const fillAction = { type: 'fill', x: pos.x, y: pos.y, color };
+      onDraw && onDraw(fillAction);
+      setLocalStack(stack => [...stack, fillAction]);
     }
   };
 
@@ -165,9 +195,9 @@ export default function Canvas({ isDrawing, onDraw, drawingData, disabled, color
     <div>
       <canvas
         ref={canvasRef}
-        width={480}
-        height={400}
-        style={{ background: '#111', borderRadius: 12, border: '2px solid #444', touchAction: 'none', display: 'block', margin: '0 auto', width: '100%', maxWidth: 480, height: 'auto' }}
+        width={canvasSize.width}
+        height={canvasSize.height}
+        style={{ background: '#111', borderRadius: 12, border: '2px solid #444', touchAction: 'none', display: 'block', margin: '0 auto', width: '100%', maxWidth: 700, height: 'auto' }}
         onMouseDown={isDrawing && tool !== 'fill' ? handlePointerDown : undefined}
         onMouseMove={isDrawing && tool !== 'fill' ? handlePointerMove : undefined}
         onMouseUp={isDrawing && tool !== 'fill' ? handlePointerUp : undefined}

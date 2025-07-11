@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function SettingsPanel({ settings, onSave, onCancel, isHost, showAsModal }) {
+export default function SettingsPanel({ settings, onSave, onCancel, isHost, showAsModal, viewOnly }) {
   const [roundTime, setRoundTime] = useState(settings.roundTime || 80);
   const [maxRounds, setMaxRounds] = useState(settings.maxRounds || 3);
   const [hintCount, setHintCount] = useState(settings.hintIntervals ? settings.hintIntervals.length : 2);
@@ -72,42 +72,42 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
       <h4>Game Settings</h4>
       <div style={{ marginBottom: 8 }}>
         <label>Round Time (sec): </label>
-        <input type="number" value={roundTime} min={30} max={180} onChange={e => setRoundTime(e.target.value)} style={{ width: 60, marginLeft: 8 }} disabled={!isHost} />
+        <input type="number" value={roundTime} min={30} max={180} onChange={e => setRoundTime(e.target.value)} style={{ width: 60, marginLeft: 8 }} disabled={!isHost || viewOnly} />
       </div>
       <div style={{ marginBottom: 8 }}>
         <label>Max Rounds: </label>
-        <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost} />
+        <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost || viewOnly} />
       </div>
       <div style={{ marginBottom: 8 }}>
         <label>Number of Hints: </label>
-        <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} style={{ width: 40, marginLeft: 8 }} disabled={!isHost} />
+        <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} style={{ width: 40, marginLeft: 8 }} disabled={!isHost || viewOnly} />
       </div>
       {Array.from({ length: hintCount }).map((_, idx) => (
         <div key={idx} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
           <label style={{ marginRight: 8 }}>Hint {idx + 1} timing:</label>
-          <input type="range" min={5} max={95} step={1} value={hintIntervals[idx] || 0} onChange={e => handleHintIntervalChange(idx, Number(e.target.value))} disabled={!isHost} style={{ width: 120, marginRight: 8 }} />
+          <input type="range" min={5} max={95} step={1} value={hintIntervals[idx] || 0} onChange={e => handleHintIntervalChange(idx, Number(e.target.value))} disabled={!isHost || viewOnly} style={{ width: 120, marginRight: 8 }} />
           <span>{hintIntervals[idx] || 0}%</span>
         </div>
       ))}
       <div style={{ marginBottom: 8 }}>
         <label>Word Count (choices for drawer): </label>
-        <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost} />
+        <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost || viewOnly} />
       </div>
       <div className="form-check form-switch" style={{ marginBottom: 8 }}>
-        <input className="form-check-input" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost} />
+        <input className="form-check-input" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost || viewOnly} />
         <label className="form-check-label" htmlFor="allowUndo">Allow Drawing Undo</label>
       </div>
       <div className="form-check form-switch" style={{ marginBottom: 8 }}>
-        <input className="form-check-input" type="checkbox" id="allowChat" checked={allowChat} onChange={e => setAllowChat(e.target.checked)} disabled={!isHost} />
+        <input className="form-check-input" type="checkbox" id="allowChat" checked={allowChat} onChange={e => setAllowChat(e.target.checked)} disabled={!isHost || viewOnly} />
         <label className="form-check-label" htmlFor="allowChat">Allow Chat</label>
       </div>
       <div className="form-check form-switch" style={{ marginBottom: 8 }}>
-        <input className="form-check-input" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost} />
+        <input className="form-check-input" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost || viewOnly} />
         <label className="form-check-label" htmlFor="showTimerBar">Show Timer Bar</label>
       </div>
       <div style={{ marginBottom: 8 }}>
         <label>Language: </label>
-        <select value={language} onChange={e => setLanguage(e.target.value)} disabled={!isHost} className="form-select form-select-sm" style={{ width: 120, marginLeft: 8 }}>
+        <select value={language} onChange={e => setLanguage(e.target.value)} disabled={!isHost || viewOnly} className="form-select form-select-sm" style={{ width: 120, marginLeft: 8 }}>
           <option value="en">English</option>
           <option value="es">Spanish</option>
           <option value="fr">French</option>
@@ -115,10 +115,12 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
           <option value="it">Italian</option>
         </select>
       </div>
-      <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        {onCancel && <button onClick={onCancel} className="btn btn-secondary">Cancel</button>}
-        {isHost && <button onClick={handleSave} className="btn btn-primary">Save</button>}
-      </div>
+      {!viewOnly && (
+        <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          {onCancel && <button onClick={onCancel} className="btn btn-secondary">Cancel</button>}
+          {isHost && <button onClick={handleSave} className="btn btn-primary">Save</button>}
+        </div>
+      )}
     </div>
   );
 
