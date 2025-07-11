@@ -307,9 +307,10 @@ async function endRound(io, code) {
   // Award drawer points: e.g., 500 * number of correct guessers
   const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
   const drawer = room.players.find(p => p.userId === room.gameState.drawingPlayerId);
-  if (drawer) drawer.score += correctGuessers.length * 500;
+  if (drawer) drawer.score += correctGuessers.length * 50;
   await room.save(); // Save updated scores before emitting
   io.to(code).emit('room:update', room); // Emit updated room state
+  console.log('Emitting round-end with guesses:', room.gameState.guesses);
   io.to(code).emit('round-end', {
     word: room.gameState.currentWord,
     scores: room.players.map(p => ({ userId: p.userId, score: p.score })),

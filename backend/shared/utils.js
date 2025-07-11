@@ -31,8 +31,8 @@ function getHint(word, revealedCount) {
 }
 
 function calculateScore(timeLeft, totalTime) {
-  // Award more points for faster guesses (e.g., 1000 * (timeLeft / totalTime))
-  return Math.max(100, Math.floor(1000 * (timeLeft / totalTime)));
+  // New: 20 base + up to 80 bonus for speed (max 100)
+  return Math.max(20, Math.floor(20 + 80 * (timeLeft / totalTime)));
 }
 
 function getNextDrawer(players, currentDrawerId) {

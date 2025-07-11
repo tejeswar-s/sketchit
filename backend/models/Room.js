@@ -29,7 +29,7 @@ const roomSchema = new mongoose.Schema({
     drawingPlayerId: { type: String, default: '' },
     phase: { type: String, default: 'waiting' }, // waiting, drawing, guessing, ended
     timer: { type: Number, default: 0 },
-    guesses: [{ userId: String, guess: String, correct: Boolean }],
+    guesses: [{ userId: String, guess: String, correct: Boolean, score: Number, time: Number, _id: false }],
     wordChoices: [String],
     hint: { type: String, default: '' },
   },

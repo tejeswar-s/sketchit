@@ -561,29 +561,53 @@ export default function GameRoomPage() {
           {/* Animated round summary modal */}
           <Modal open={showRoundSummary} onClose={() => setShowRoundSummary(false)} title="Score Table">
             {roundSummaryData && (
-              <div className="animate__animated animate__fadeInDown" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 20, marginBottom: 8 }}>
-                  The word was: <span style={{ fontWeight: 'bold', color: '#0af' }}>{roundSummaryData.word}</span>
+              <>
+                {console.log('Round summary guesses:', roundSummaryData.guesses)}
+                <div className="animate__animated animate__fadeInDown" style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, marginBottom: 8 }}>
+                    The word was: <span style={{ fontWeight: 'bold', color: '#0af' }}>{roundSummaryData.word}</span>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <strong>Guesses:</strong>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {/* Show guessers */}
+                      {roundSummaryData.players.filter(p => p.userId !== roundSummaryData.drawerId).map(p => {
+                        const playerGuesses = roundSummaryData.guesses.filter(g => g.userId === p.userId);
+                        const correctGuess = playerGuesses.find(g => g.correct);
+                        const guess = correctGuess || (playerGuesses.length > 0 ? playerGuesses[playerGuesses.length - 1] : undefined);
+                        const roundScore = guess && guess.correct ? guess.score : 0;
+                        return (
+                          <li key={p.userId} style={{ background: '#23272b', borderRadius: 6, margin: '4px 0', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {p.avatar && p.avatar.emoji ? <span style={{ fontSize: 20 }}>{p.avatar.emoji}</span> : null}
+                              {p.name}
+                            </span>
+                            <span>{guess ? guess.guess : <em style={{ color: '#aaa', fontWeight: 400 }}>No guess</em>}</span>
+                            <span style={{ color: roundScore > 0 ? '#1aff7c' : '#ff4d4f', minWidth: 36, textAlign: 'right' }}>{roundScore > 0 ? `+${roundScore}` : '0'}</span>
+                          </li>
+                        );
+                      })}
+                      {/* Show drawer's score for the round */}
+                      {(() => {
+                        const drawer = roundSummaryData.players.find(p => p.userId === roundSummaryData.drawerId);
+                        // Drawer gets 50 points per correct guesser
+                        const correctGuessers = roundSummaryData.guesses.filter(g => g.correct);
+                        const drawerRoundScore = correctGuessers.length * 50;
+                        return (
+                          <li key={drawer.userId} style={{ background: '#23272b', borderRadius: 6, margin: '4px 0', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {drawer.avatar && drawer.avatar.emoji ? <span style={{ fontSize: 20 }}>{drawer.avatar.emoji}</span> : null}
+                              {drawer.name} <span style={{ fontWeight: 400, color: '#aaa', marginLeft: 4 }}>(Drawer)</span>
+                            </span>
+                            <span><em style={{ color: '#aaa', fontWeight: 400 }}>—</em></span>
+                            <span style={{ color: drawerRoundScore > 0 ? '#1aff7c' : '#ff4d4f', minWidth: 36, textAlign: 'right' }}>{drawerRoundScore > 0 ? `+${drawerRoundScore}` : '0'}</span>
+                          </li>
+                        );
+                      })()}
+                    </ul>
+                  </div>
                 </div>
-                <div style={{ marginBottom: 8 }}>
-                  <strong>Guesses:</strong>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                    {roundSummaryData.players.map(p => {
-                      const guess = roundSummaryData.guesses.find(g => g.userId === p.userId);
-                      return (
-                        <li key={p.userId} style={{ color: guess?.correct ? '#1aff7c' : '#fff', fontWeight: guess?.correct ? 'bold' : 'normal', background: '#23272b', borderRadius: 6, margin: '4px 0', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {p.avatar && p.avatar.emoji ? <span style={{ fontSize: 20 }}>{p.avatar.emoji}</span> : null}
-                            {p.name}
-                          </span>
-                          <span>{guess ? guess.guess : <em style={{ color: '#aaa' }}>No guess</em>}</span>
-                          <span>{guess?.correct ? '✔️' : ''}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
+              </>
             )}
           </Modal>
         </div>
