@@ -125,6 +125,27 @@ module.exports = function roomHandler(io, socket) {
       await handlePlayerLeave(io, currentRoomCode, currentUserId);
     }
   });
+
+  // WebRTC voice chat signaling relays
+  socket.on('voice-offer', ({ code, offer, from }) => {
+    socket.to(code).emit('voice-offer', { offer, from });
+  });
+  socket.on('voice-answer', ({ code, answer, from }) => {
+    socket.to(code).emit('voice-answer', { answer, from });
+  });
+  socket.on('voice-ice-candidate', ({ code, candidate, from }) => {
+    socket.to(code).emit('voice-ice-candidate', { candidate, from });
+  });
+
+  // Mic status relay
+  socket.on('mic-status', ({ code, userId, isMicOn }) => {
+    io.to(code).emit('mic-status', { userId, isMicOn });
+  });
+
+  // Global mute relay
+  socket.on('global-mute', ({ code, muted }) => {
+    io.to(code).emit('global-mute', { muted });
+  });
 };
 
 async function handlePlayerLeave(io, code, userId) {

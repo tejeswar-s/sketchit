@@ -11,6 +11,7 @@ import { useSocket } from '../contexts/SocketContext';
 import useSocketEvents from '../hooks/useSocketEvents';
 import SettingsPanel from '../components/SettingsPanel';
 import Modal from '../components/Modal';
+import useVoiceChat from '../hooks/useVoiceChat';
 
 // Add animation CSS for letter reveal
 // const style = document.createElement('style');
@@ -24,7 +25,7 @@ import Modal from '../components/Modal';
 // const messagesEndRef = useRef(null);
 // document.head.appendChild(style);
 
-function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHost, onLeave, onClose, selectedWordOrBlanks }) {
+function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHost, onLeave, onClose, selectedWordOrBlanks, isMicOn, onToggleMic, isHostUser, onGlobalMute, globalMuted }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', background: '#1a2a3a', borderRadius: 8, padding: '6px 18px', marginBottom: 12, minHeight: 0, height: 56, gap: 0 }}>
       {/* Left: Timer and round */}
@@ -41,7 +42,63 @@ function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHos
         <button className="btn btn-outline-danger btn-sm" onClick={onLeave} style={{ marginRight: 4 }}>Leave Room</button>
         {isHost && <button className="btn btn-danger btn-sm" onClick={onClose} style={{ marginRight: 12 }}>Close Room</button>}
         <button onClick={onSettings} style={{ background: 'none', border: 'none', fontSize: 28, color: '#fff', cursor: 'pointer' }} title="Settings">⚙️</button>
+        {/* Mic toggle button - always at far right */}
+        <button
+          onClick={onToggleMic}
+          style={{
+            background: isMicOn ? 'linear-gradient(135deg, #1aff7c 60%, #43e97b 100%)' : 'linear-gradient(135deg, #444 60%, #222 100%)',
+            border: 'none',
+            borderRadius: '50%',
+            width: 44,
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 24,
+            color: isMicOn ? '#fff' : '#bbb',
+            marginLeft: 16,
+            boxShadow: isMicOn ? '0 0 0 4px #1aff7c55, 0 2px 8px #0006' : '0 2px 8px #0006',
+            outline: isMicOn ? '2px solid #1aff7c' : 'none',
+            transition: 'background 0.2s, box-shadow 0.2s, outline 0.2s',
+            cursor: 'pointer',
+            position: 'relative',
+          }}
+          title={isMicOn ? 'Turn off mic' : 'Turn on mic'}
+          onMouseOver={e => { e.currentTarget.style.boxShadow = isMicOn ? '0 0 0 6px #1aff7c99, 0 2px 12px #0008' : '0 0 0 2px #888, 0 2px 12px #0008'; }}
+          onMouseOut={e => { e.currentTarget.style.boxShadow = isMicOn ? '0 0 0 4px #1aff7c55, 0 2px 8px #0006' : '0 2px 8px #0006'; }}
+        >
+          {isMicOn ? '🎤' : '🎙️'}
+          {/* Optional: live pulse */}
+          {isMicOn && (
+            <span style={{
+              position: 'absolute',
+              top: -6, left: -6, right: -6, bottom: -6,
+              borderRadius: '50%',
+              boxShadow: '0 0 12px 4px #1aff7c55',
+              pointerEvents: 'none',
+              animation: 'mic-pulse 1.2s infinite',
+              zIndex: 0,
+            }} />
+          )}
+        </button>
+        {isHostUser && (
+          <button
+            onClick={onGlobalMute}
+            style={{ background: globalMuted ? '#ff4d4f' : '#1aff7c', color: '#fff', border: 'none', borderRadius: 6, padding: '0 16px', height: 36, fontWeight: 600, marginLeft: 8, cursor: 'pointer', boxShadow: globalMuted ? '0 0 8px #ff4d4f88' : '0 0 8px #1aff7c88', transition: 'background 0.2s, box-shadow 0.2s' }}
+            title={globalMuted ? 'Unmute all' : 'Mute all'}
+          >
+            {globalMuted ? 'Unmute All' : 'Mute All'}
+          </button>
+        )}
       </div>
+      {/* Mic pulse animation */}
+      <style>{`
+        @keyframes mic-pulse {
+          0% { box-shadow: 0 0 12px 4px #1aff7c55; }
+          50% { box-shadow: 0 0 24px 8px #1aff7c33; }
+          100% { box-shadow: 0 0 12px 4px #1aff7c55; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -113,6 +170,44 @@ export default function GameRoomPage() {
   }, [drawingData]);
   // Chat input state
   const [input, setInput] = useState('');
+  const [isMicOn, setIsMicOn] = useState(false);
+  const [micStatus, setMicStatus] = useState({}); // userId -> true/false
+  const [globalMuted, setGlobalMuted] = useState(false);
+
+  // Voice chat hook - must be at top level
+  const { speakingUsers } = useVoiceChat({ 
+    isMicOn, 
+    roomCode, 
+    user, 
+    socket, 
+    players: room?.players || [], 
+    globalMuted, 
+    isHostUser 
+  });
+
+  // Broadcast mic status when toggled
+  useEffect(() => {
+    if (!socket || !user) return;
+    socket.emit('mic-status', { code: roomCode, userId: user.userId, isMicOn });
+  }, [isMicOn, socket, user, roomCode]);
+
+  // Listen for mic status updates from others
+  useEffect(() => {
+    if (!socket) return;
+    const handler = ({ userId, isMicOn }) => {
+      setMicStatus(prev => ({ ...prev, [userId]: isMicOn }));
+    };
+    socket.on('mic-status', handler);
+    return () => { socket.off('mic-status', handler); };
+  }, [socket]);
+
+  // Listen for global mute events
+  useEffect(() => {
+    if (!socket) return;
+    const handler = ({ muted }) => setGlobalMuted(muted);
+    socket.on('global-mute', handler);
+    return () => { socket.off('global-mute', handler); };
+  }, [socket]);
 
   // Undo last action
   const handleUndo = () => {
@@ -157,6 +252,7 @@ export default function GameRoomPage() {
   const isDrawer = gameState && user ? gameState.drawingPlayerId === user.userId : false;
   const isMuted = room && user ? room.players.find(p => p.userId === user.userId)?.isMuted : false;
   const isHost = room && user ? room.players.find(p => p.userId === user.userId)?.isHost : false;
+  const isHostUser = !!room?.players?.find(p => p.userId === user?.userId && p.isHost);
 
   // Now it's safe to log
   console.log('GameRoomPage render', { phase, isDrawer, wordChoices: gameState?.wordChoices });
@@ -477,6 +573,14 @@ export default function GameRoomPage() {
             </div>
           ) : null
         }
+        isMicOn={isMicOn}
+        onToggleMic={() => setIsMicOn(m => !m)}
+        isHostUser={isHostUser}
+        onGlobalMute={() => {
+          socket.emit('global-mute', { code: roomCode, muted: !globalMuted });
+          setGlobalMuted(m => !m);
+        }}
+        globalMuted={globalMuted}
       />
       {/* Leave/Close Room Modal */}
       <Modal open={showLeaveModal} onClose={() => setShowLeaveModal(false)} title={isHost ? 'Close Room' : 'Leave Room'}>
@@ -501,7 +605,8 @@ export default function GameRoomPage() {
         {/* Left: Players/Scores */}
         <div style={{ flex: '1 1 0', minWidth: 160, maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
           <PlayerList
-            players={mergedPlayers}
+            players={mergedPlayers.map(p => ({ ...p, isMicOn: micStatus[p.userId] }))}
+            speakingUserIds={Object.entries(speakingUsers).filter(([_, v]) => v).map(([k]) => k)}
             hostId={room?.players?.find(p => p.isHost)?.userId}
             drawerId={gameState?.drawingPlayerId}
             myUserId={user?.userId}

@@ -7,11 +7,9 @@ function generateRoomCode(length = 5) {
   return code;
 }
 
-function maskWord(word, guessedLetters = []) {
-  return word
-    .split('')
-    .map((char) => (guessedLetters.includes(char.toLowerCase()) || char === ' ' ? char : '_'))
-    .join(' ');
+function maskWord(word) {
+  if (!word) return '';
+  return word.split('').map(c => (c === ' ' ? ' ' : '_')).join(' ');
 }
 
 function shuffleArray(array) {

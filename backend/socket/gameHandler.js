@@ -171,7 +171,10 @@ async function autoSelectWord(io, code) {
     return;
   }
   const word = room.gameState.wordChoices[0];
-  console.log('autoSelectWord called, auto-selecting word:', word);
+  if (!word) {
+    console.error('No word available for auto-select!');
+    return;
+  }
   await startDrawingPhase(io, code, word);
   const updatedRoom = await Room.findOne({ code });
   io.to(code).emit('room:update', updatedRoom); // Emit updated room state after auto-select
@@ -195,6 +198,10 @@ function getHintRandom(word, level, revealedIndexes) {
 }
 
 async function startDrawingPhase(io, code, word) {
+  if (!word) {
+    console.error('No word provided to startDrawingPhase!');
+    return;
+  }
   clearRoomTimers(code);
   const room = await Room.findOne({ code });
   if (!room) return;
