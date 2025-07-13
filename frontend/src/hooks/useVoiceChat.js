@@ -11,6 +11,8 @@ export default function useVoiceChat({ isMicOn, roomCode, user, socket, players,
   const remoteAudioRefs = useRef({}); // userId -> HTMLAudioElement
   const analyserNodes = useRef({}); // userId -> AnalyserNode
   const [speakingUsers, setSpeakingUsers] = useState({}); // userId -> true/false
+  // Buffer for ICE candidates received before remoteDescription is set
+  const iceCandidateBuffer = useRef({});
 
   // Start/stop local audio stream
   useEffect(() => {
@@ -173,31 +175,68 @@ export default function useVoiceChat({ isMicOn, roomCode, user, socket, players,
           }
         };
       }
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('voice-answer', { code: roomCode, answer, from: myId });
+      // Only set remote offer if in the right state
+      if (pc.signalingState === 'stable') {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        // Add any buffered ICE candidates
+        if (iceCandidateBuffer.current[from]) {
+          for (const cand of iceCandidateBuffer.current[from]) {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          }
+          iceCandidateBuffer.current[from] = [];
+        }
+        const answer = await pc.createAnswer();
+        if (pc.signalingState === 'have-remote-offer') {
+          await pc.setLocalDescription(answer);
+          console.log('🎤 Sending answer to:', from);
+          socket.emit('voice-answer', { code: roomCode, answer, from: myId });
+        } else {
+          console.warn('Skipping setLocalDescription(answer): wrong signaling state', pc.signalingState);
+        }
+      } else {
+        console.warn('Skipping setRemoteDescription(offer): wrong signaling state', pc.signalingState);
+      }
     };
     const handleAnswer = async ({ answer, from }) => {
       if (from === myId) return;
       const pc = peerConnections.current[from];
       if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        // Only set remote answer if in the right state
+        if (pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+          // Add any buffered ICE candidates
+          if (iceCandidateBuffer.current[from]) {
+            for (const cand of iceCandidateBuffer.current[from]) {
+              await pc.addIceCandidate(new RTCIceCandidate(cand));
+            }
+            iceCandidateBuffer.current[from] = [];
+          }
+        } else {
+          console.warn('Skipping setRemoteDescription(answer): wrong signaling state', pc.signalingState);
+        }
       }
     };
     const handleIce = async ({ candidate, from }) => {
       if (from === myId) return;
       const pc = peerConnections.current[from];
       if (pc) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        if (pc.remoteDescription && pc.remoteDescription.type) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } else {
+          // Buffer the candidate
+          if (!iceCandidateBuffer.current[from]) iceCandidateBuffer.current[from] = [];
+          iceCandidateBuffer.current[from].push(candidate);
+        }
       }
     };
     socket.on('voice-offer', handleOffer);
     socket.on('voice-answer', handleAnswer);
     socket.on('voice-ice-candidate', handleIce);
     if (isMicOn) {
+      console.log('🎤 Creating offers for existing peers...');
       Object.entries(peerConnections.current).forEach(async ([pid, pc]) => {
         if (pid === myId) return;
+        console.log('🎤 Creating offer for:', pid);
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit('voice-offer', { code: roomCode, offer, from: myId });

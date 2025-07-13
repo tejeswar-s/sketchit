@@ -25,7 +25,7 @@ import useVoiceChat from '../hooks/useVoiceChat';
 // const messagesEndRef = useRef(null);
 // document.head.appendChild(style);
 
-function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHost, onLeave, onClose, selectedWordOrBlanks, isMicOn, onToggleMic, isHostUser, onGlobalMute, globalMuted }) {
+function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHost, onLeave, selectedWordOrBlanks }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', background: '#1a2a3a', borderRadius: 8, padding: '6px 18px', marginBottom: 12, minHeight: 0, height: 56, gap: 0 }}>
       {/* Left: Timer and round */}
@@ -40,65 +40,8 @@ function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHos
       {/* Right: Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 220, justifyContent: 'flex-end' }}>
         <button className="btn btn-outline-danger btn-sm" onClick={onLeave} style={{ marginRight: 4 }}>Leave Room</button>
-        {isHost && <button className="btn btn-danger btn-sm" onClick={onClose} style={{ marginRight: 12 }}>Close Room</button>}
         <button onClick={onSettings} style={{ background: 'none', border: 'none', fontSize: 28, color: '#fff', cursor: 'pointer' }} title="Settings">⚙️</button>
-        {/* Mic toggle button - always at far right */}
-        <button
-          onClick={onToggleMic}
-          style={{
-            background: isMicOn ? 'linear-gradient(135deg, #1aff7c 60%, #43e97b 100%)' : 'linear-gradient(135deg, #444 60%, #222 100%)',
-            border: 'none',
-            borderRadius: '50%',
-            width: 44,
-            height: 44,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            color: isMicOn ? '#fff' : '#bbb',
-            marginLeft: 16,
-            boxShadow: isMicOn ? '0 0 0 4px #1aff7c55, 0 2px 8px #0006' : '0 2px 8px #0006',
-            outline: isMicOn ? '2px solid #1aff7c' : 'none',
-            transition: 'background 0.2s, box-shadow 0.2s, outline 0.2s',
-            cursor: 'pointer',
-            position: 'relative',
-          }}
-          title={isMicOn ? 'Turn off mic' : 'Turn on mic'}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = isMicOn ? '0 0 0 6px #1aff7c99, 0 2px 12px #0008' : '0 0 0 2px #888, 0 2px 12px #0008'; }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = isMicOn ? '0 0 0 4px #1aff7c55, 0 2px 8px #0006' : '0 2px 8px #0006'; }}
-        >
-          {isMicOn ? '🎤' : '🎙️'}
-          {/* Optional: live pulse */}
-          {isMicOn && (
-            <span style={{
-              position: 'absolute',
-              top: -6, left: -6, right: -6, bottom: -6,
-              borderRadius: '50%',
-              boxShadow: '0 0 12px 4px #1aff7c55',
-              pointerEvents: 'none',
-              animation: 'mic-pulse 1.2s infinite',
-              zIndex: 0,
-            }} />
-          )}
-        </button>
-        {isHostUser && (
-          <button
-            onClick={onGlobalMute}
-            style={{ background: globalMuted ? '#ff4d4f' : '#1aff7c', color: '#fff', border: 'none', borderRadius: 6, padding: '0 16px', height: 36, fontWeight: 600, marginLeft: 8, cursor: 'pointer', boxShadow: globalMuted ? '0 0 8px #ff4d4f88' : '0 0 8px #1aff7c88', transition: 'background 0.2s, box-shadow 0.2s' }}
-            title={globalMuted ? 'Unmute all' : 'Mute all'}
-          >
-            {globalMuted ? 'Unmute All' : 'Mute All'}
-          </button>
-        )}
       </div>
-      {/* Mic pulse animation */}
-      <style>{`
-        @keyframes mic-pulse {
-          0% { box-shadow: 0 0 12px 4px #1aff7c55; }
-          50% { box-shadow: 0 0 24px 8px #1aff7c33; }
-          100% { box-shadow: 0 0 12px 4px #1aff7c55; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -155,10 +98,12 @@ export default function GameRoomPage() {
   const [drawerChangeMsg, setDrawerChangeMsg] = useState('');
   const [redirectMsg, setRedirectMsg] = useState('');
   const [showSettingsSaved, setShowSettingsSaved] = useState(false);
+  const [showRoundRestart, setShowRoundRestart] = useState(false);
+  const [roundRestartMsg, setRoundRestartMsg] = useState('');
   // Drawing tool state (hoisted from Canvas)
-  const [color, setColor] = useState('#fff');
+  const [color, setColor] = useState('#fff'); // default to white
   const [width, setWidth] = useState(4);
-  const [tool, setTool] = useState('pen');
+  const [tool, setTool] = useState('pen'); // default to pen
   const [isEraser, setIsEraser] = useState(false);
   // Undo/redo stacks for drawing
   const [localStack, setLocalStack] = useState([]);
@@ -173,6 +118,15 @@ export default function GameRoomPage() {
   const [isMicOn, setIsMicOn] = useState(false);
   const [micStatus, setMicStatus] = useState({}); // userId -> true/false
   const [globalMuted, setGlobalMuted] = useState(false);
+  const [showWaitingModal, setShowWaitingModal] = useState(false);
+  const [waitingMsg, setWaitingMsg] = useState('');
+  const [wordSelectTimer, setWordSelectTimer] = useState(10);
+
+  // Derived variables - must be defined before hooks that use them
+  const isDrawer = gameState && user ? gameState.drawingPlayerId === user.userId : false;
+  const isMuted = room && user ? room.players.find(p => p.userId === user.userId)?.isMuted : false;
+  const isHost = room && user ? room.players.find(p => p.userId === user.userId)?.isHost : false;
+  const isHostUser = !!room?.players?.find(p => p.userId === user?.userId && p.isHost);
 
   // Voice chat hook - must be at top level
   const { speakingUsers } = useVoiceChat({ 
@@ -207,6 +161,17 @@ export default function GameRoomPage() {
     const handler = ({ muted }) => setGlobalMuted(muted);
     socket.on('global-mute', handler);
     return () => { socket.off('global-mute', handler); };
+  }, [socket]);
+
+  // Listen for 'waiting-for-players' event from backend
+  useEffect(() => {
+    if (!socket) return;
+    const handler = ({ message }) => {
+      setWaitingMsg(message || 'Waiting for other players...');
+      setShowWaitingModal(true);
+    };
+    socket.on('waiting-for-players', handler);
+    return () => { socket.off('waiting-for-players', handler); };
   }, [socket]);
 
   // Undo last action
@@ -248,11 +213,7 @@ export default function GameRoomPage() {
     }
   }, [messages]);
 
-  // Derived variables
-  const isDrawer = gameState && user ? gameState.drawingPlayerId === user.userId : false;
-  const isMuted = room && user ? room.players.find(p => p.userId === user.userId)?.isMuted : false;
-  const isHost = room && user ? room.players.find(p => p.userId === user.userId)?.isHost : false;
-  const isHostUser = !!room?.players?.find(p => p.userId === user?.userId && p.isHost);
+  // Derived variables (already defined above)
 
   // Now it's safe to log
   console.log('GameRoomPage render', { phase, isDrawer, wordChoices: gameState?.wordChoices });
@@ -373,7 +334,9 @@ export default function GameRoomPage() {
       setTimeout(() => setShowDrawerChange(false), 3000);
     },
     'round-restart': ({ drawerId }) => {
-      // Optionally show a quick round restart notification
+      setRoundRestartMsg('Round restarted. New drawer selected.');
+      setShowRoundRestart(true);
+      setTimeout(() => setShowRoundRestart(false), 3000);
     },
     'room-closed': () => {
       setRedirectMsg('Room was closed by the host.');
@@ -457,6 +420,19 @@ export default function GameRoomPage() {
     return () => { if (socket) socket.off('game-over'); };
   }, [socket, navigate, roomCode]);
   
+  // Listen for round-start to start the word select timer
+  useEffect(() => {
+    if (phase === 'selecting-word') {
+      setWordSelectTimer(10);
+      const interval = setInterval(() => {
+        setWordSelectTimer(t => {
+          if (t <= 1) { clearInterval(interval); return 0; }
+          return t - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [phase]);
 
   // Guard: Only render if user, room, and gameState are set
   if (!user || !room || !gameState) {
@@ -533,11 +509,23 @@ export default function GameRoomPage() {
   return (
     <div className="container game-room-responsive" style={{ width: '100%', margin: 0, background: '#23272b', borderRadius: 0, padding: 0, boxShadow: 'none', position: 'relative', minHeight: '100vh', boxSizing: 'border-box' }}>
       {/* Centered SketchIt title with purple paint brush */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8, marginTop: 4, position: 'relative', width: '100%' }}>
         <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10 }}>
           🎨 SketchIt 🖌️
         </span>
+        <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
+          {isHost && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => setShowLeaveModal(true)}
+              style={{ marginRight: 16, fontWeight: 700, fontSize: 18, borderRadius: 8, padding: '4px 18px', boxShadow: '0 2px 4px #a777e322', border: 'none', background: '#ff4d4f', color: '#fff' }}
+            >
+              Close Room
+            </button>
+          )}
+        </div>
       </div>
+      
       <TopBar
         round={gameState?.round || 1}
         maxRounds={room?.settings?.maxRounds || 3}
@@ -547,7 +535,6 @@ export default function GameRoomPage() {
         isDrawer={isDrawer}
         isHost={isHost}
         onLeave={() => setShowLeaveModal(true)}
-        onClose={() => setShowLeaveModal(true)}
         selectedWordOrBlanks={
           phase === 'drawing' && isDrawer ? (
             <div style={{ fontSize: 24, letterSpacing: 4, fontWeight: 'bold', color: '#a7bfff', textAlign: 'center', whiteSpace: 'nowrap' }}>{gameState.currentWord}</div>
@@ -573,14 +560,6 @@ export default function GameRoomPage() {
             </div>
           ) : null
         }
-        isMicOn={isMicOn}
-        onToggleMic={() => setIsMicOn(m => !m)}
-        isHostUser={isHostUser}
-        onGlobalMute={() => {
-          socket.emit('global-mute', { code: roomCode, muted: !globalMuted });
-          setGlobalMuted(m => !m);
-        }}
-        globalMuted={globalMuted}
       />
       {/* Leave/Close Room Modal */}
       <Modal open={showLeaveModal} onClose={() => setShowLeaveModal(false)} title={isHost ? 'Close Room' : 'Leave Room'}>
@@ -610,45 +589,78 @@ export default function GameRoomPage() {
             hostId={room?.players?.find(p => p.isHost)?.userId}
             drawerId={gameState?.drawingPlayerId}
             myUserId={user?.userId}
-            onMute={() => {}}
-            onKick={() => {}}
+            onMute={userId => {
+              if (userId === 'all') {
+                socket.emit('global-mute', { code: roomCode, muted: !globalMuted });
+                setGlobalMuted(m => !m);
+              } else {
+                // Optionally: emit individual mute event if needed
+              }
+            }}
+            onToggleMic={userId => {
+              if (userId === user.userId) {
+                setIsMicOn(m => !m);
+              } else if (isHostUser) {
+                // Optionally: emit event to toggle another user's mic (if supported)
+              }
+            }}
+            onKick={userId => {
+              socket.emit('room:kick', { code: roomCode, userId });
+            }}
+            globalMuted={globalMuted}
+            isHostUser={isHostUser}
+            micStatus={micStatus}
           />
         </div>
         {/* Center: Canvas */}
         <div style={{ flex: '2 1 0', minWidth: 0, maxWidth: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', minHeight: 0, margin: '0 6px', background: '#181a1d', borderRadius: 18, boxShadow: '0 2px 24px #0008', padding: '10px 0', gap: 20, justifyContent: 'center', boxSizing: 'border-box' }}>
           {/* Always reserve space for the canvas/overlay to prevent layout jump */}
           {/* TODO: For canvas precision, ensure Canvas uses ref/clientWidth/clientHeight for drawing calculations */}
-          <div style={{ width: '100%', maxWidth: 700, aspectRatio: '6/5', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            {/* Show WordPopup as overlay over drawing section during word selection */}
-            {shouldShowWordPopup && isDrawer ? (
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
-                <WordPopup words={gameState.wordChoices} onSelect={handleWordSelect} />
+          {/* Show WordPopup as overlay over drawing section during word selection */}
+          {shouldShowWordPopup && isDrawer ? (
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+              <WordPopup words={gameState.wordChoices} onSelect={handleWordSelect} timer={wordSelectTimer} />
+            </div>
+          ) : null}
+          {shouldShowWordPopup && !isDrawer ? (
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
+              <div style={{
+                color: '#fff',
+                fontSize: 28,
+                fontWeight: 700,
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #23272b 80%, #3a3f5a 100%)',
+                borderRadius: 20,
+                padding: '40px 60px',
+                boxShadow: '0 4px 32px #000a, 0 0 16px #a777e344',
+                border: '2.5px solid #a777e3',
+                letterSpacing: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 18,
+                maxWidth: 420,
+                margin: '0 auto',
+                position: 'relative',
+                animation: 'fadeInDown 0.7s',
+              }}>
+                <span style={{ fontSize: 38, marginBottom: 10 }}>⏳</span>
+                Waiting for drawer to select the word...
+                <span style={{ fontSize: 16, color: '#a7bfff', fontWeight: 400, marginTop: 8 }}>Get ready to guess!</span>
               </div>
-            ) : null}
-            {/* Only show the canvas during drawing phase and when not selecting word */}
-            {phase === 'drawing' && !shouldShowWordPopup && (
-              <Canvas
-                isDrawing={isDrawer && phase === 'drawing'}
-                onDraw={handleDraw}
-                onStrokeEnd={handleStrokeEnd}
-                drawingData={drawingData}
-                disabled={!(isDrawer && phase === 'drawing')}
-                color={color}
-                width={width}
-                tool={tool}
-                isEraser={isEraser}
-                setColor={setColor}
-                setWidth={setWidth}
-                setTool={setTool}
-                setIsEraser={setIsEraser}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-                renderControls={false}
-              />
-            )}
-          </div>
-          {/* Drawing tools below the canvas for the drawer */}
-          {phase === 'drawing' && !shouldShowWordPopup && isDrawer && (
+            </div>
+          ) : null}
+          <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <Canvas
+              isDrawing={isDrawer && phase === 'drawing'}
+              onDraw={handleDraw}
+              drawingData={drawingData}
+              disabled={!(isDrawer && phase === 'drawing')}
+              tool={tool}
+              isEraser={isEraser}
+              color={color}
+              width={width}
+            />
             <CanvasControls
               color={color}
               setColor={setColor}
@@ -660,61 +672,9 @@ export default function GameRoomPage() {
               setIsEraser={setIsEraser}
               disabled={!(isDrawer && phase === 'drawing')}
               onUndo={handleUndo}
-              canUndo={localStack.length > 0}
+              canUndo={drawingData.length > 0}
             />
-          )}
-          {/* Animated round summary modal */}
-          <Modal open={showRoundSummary} onClose={() => setShowRoundSummary(false)} title="Score Table">
-            {roundSummaryData && (
-              <>
-                {console.log('Round summary guesses:', roundSummaryData.guesses)}
-                <div className="animate__animated animate__fadeInDown" style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, marginBottom: 8 }}>
-                    The word was: <span style={{ fontWeight: 'bold', color: '#0af' }}>{roundSummaryData.word}</span>
-                  </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <strong>Guesses:</strong>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                      {/* Show guessers */}
-                      {roundSummaryData.players.filter(p => p.userId !== roundSummaryData.drawerId).map(p => {
-                        const playerGuesses = roundSummaryData.guesses.filter(g => g.userId === p.userId);
-                        const correctGuess = playerGuesses.find(g => g.correct);
-                        const guess = correctGuess || (playerGuesses.length > 0 ? playerGuesses[playerGuesses.length - 1] : undefined);
-                        const roundScore = guess && guess.correct ? guess.score : 0;
-                        return (
-                          <li key={p.userId} style={{ background: '#23272b', borderRadius: 6, margin: '4px 0', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {p.avatar && p.avatar.emoji ? <span style={{ fontSize: 20 }}>{p.avatar.emoji}</span> : null}
-                              {p.name}
-                            </span>
-                            <span>{guess ? guess.guess : <em style={{ color: '#aaa', fontWeight: 400 }}>No guess</em>}</span>
-                            <span style={{ color: roundScore > 0 ? '#1aff7c' : '#ff4d4f', minWidth: 36, textAlign: 'right' }}>{roundScore > 0 ? `+${roundScore}` : '0'}</span>
-                          </li>
-                        );
-                      })}
-                      {/* Show drawer's score for the round */}
-                      {(() => {
-                        const drawer = roundSummaryData.players.find(p => p.userId === roundSummaryData.drawerId);
-                        // Drawer gets 50 points per correct guesser
-                        const correctGuessers = roundSummaryData.guesses.filter(g => g.correct);
-                        const drawerRoundScore = correctGuessers.length * 50;
-                        return (
-                          <li key={drawer.userId} style={{ background: '#23272b', borderRadius: 6, margin: '4px 0', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {drawer.avatar && drawer.avatar.emoji ? <span style={{ fontSize: 20 }}>{drawer.avatar.emoji}</span> : null}
-                              {drawer.name} <span style={{ fontWeight: 400, color: '#aaa', marginLeft: 4 }}>(Drawer)</span>
-                            </span>
-                            <span><em style={{ color: '#aaa', fontWeight: 400 }}>—</em></span>
-                            <span style={{ color: drawerRoundScore > 0 ? '#1aff7c' : '#ff4d4f', minWidth: 36, textAlign: 'right' }}>{drawerRoundScore > 0 ? `+${drawerRoundScore}` : '0'}</span>
-                          </li>
-                        );
-                      })()}
-                    </ul>
-                  </div>
-                </div>
-              </>
-            )}
-          </Modal>
+          </div>
         </div>
         {/* Right: Chat */}
         <div style={{ flex: '1 1 0', minWidth: 220, maxWidth: 440, display: 'flex', flexDirection: 'column', minHeight: 420, height: '100%', background: '#23272b', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '0', justifyContent: 'flex-end', alignSelf: 'stretch', boxSizing: 'border-box' }}>
@@ -834,61 +794,97 @@ export default function GameRoomPage() {
           </div>
         </div>
       </div>
+      {/* Waiting for Players Modal */}
+      <Modal open={showWaitingModal} onClose={() => {}} title="Waiting for Players">
+        <div style={{ marginBottom: 16 }}>{waitingMsg}</div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button className="btn btn-danger" onClick={() => {
+            socket.emit('room:leave', { code: roomCode, userId: user.userId }, () => {
+              navigate('/');
+            });
+          }}>Exit Room</button>
+        </div>
+      </Modal>
+      {/* Host Changed Modal */}
+      <Modal open={showHostChange} onClose={() => setShowHostChange(false)} title="Host Changed">
+        <div>{hostChangeMsg}</div>
+      </Modal>
+      {/* Drawer Changed Modal */}
+      <Modal open={showDrawerChange} onClose={() => setShowDrawerChange(false)} title="Drawer Changed">
+        <div>{drawerChangeMsg}</div>
+      </Modal>
+      {/* Round Restarted Modal */}
+      <Modal open={showRoundRestart} onClose={() => setShowRoundRestart(false)} title="Round Restarted">
+        <div>{roundRestartMsg}</div>
+      </Modal>
     </div>
   );
 }
 
 function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEraser, setIsEraser, disabled, onUndo, canUndo }) {
   const COLORS = [
-    '#7c2323', '#000', '#fff', '#e53935', '#fbc02d', '#43a047', '#1e88e5', '#8e24aa', '#00bcd4', '#ff9800', '#795548', '#c0c0c0'
+    '#000', '#222', '#fff', '#e53935', '#fbc02d', '#43a047', '#1e88e5',
+    '#8e24aa', '#00bcd4', '#ff9800', '#795548', '#c0c0c0', '#ffb6c1',
+    '#ffd700', '#90ee90', '#00ced1', '#4682b4', '#dda0dd', '#ff6347', '#40e0d0', '#a0522d'
   ];
-  const SIZES = [2, 4, 8, 16];
+  const SIZES = [2, 4, 8, 16, 24];
+  const toolButtons = [
+    { key: 'undo', icon: '↩️', onClick: onUndo, disabled: disabled || !canUndo, title: 'Undo', style: { background: (disabled || !canUndo) ? '#444' : '#fff', color: '#23272b', fontWeight: 700, border: '1px solid #888' } },
+    { key: 'pen', icon: '✏️', onClick: () => { setTool('pen'); setIsEraser(false); }, disabled, title: 'Pen', style: { background: tool === 'pen' ? '#b39ddb' : '#fff', border: '1px solid #888' } },
+    { key: 'eraser', icon: '🧽', onClick: () => { setTool('eraser'); setIsEraser(true); }, disabled, title: 'Eraser', style: { background: tool === 'eraser' ? '#ffe082' : '#fff', border: '1px solid #888' } },
+    { key: 'fill', icon: '🪣', onClick: () => { setTool('fill'); setIsEraser(false); }, disabled, title: 'Fill', style: { background: tool === 'fill' ? '#b2ebf2' : '#fff', border: '1px solid #888' } },
+    ...SIZES.map((s) => ({
+      key: `size${s}`,
+      icon: <span style={{ display: 'inline-block', background: '#fff', borderRadius: '50%', width: s, height: s, border: '1.5px solid #888' }} />,
+      onClick: () => setWidth(s),
+      disabled,
+      title: `Pen size ${s}`,
+      style: { border: width === s ? '2.5px solid #a7bfff' : '1px solid #888', background: '#23272b', boxShadow: width === s ? '0 0 8px #a7bfff' : 'none' }
+    }))
+  ];
+
   return (
     <div style={{
       background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)',
       borderRadius: 14,
       boxShadow: '0 2px 16px #0006',
-      padding: '12px 18px',
-      marginBottom: 18,
+      padding: '4px 0px', // reduced padding
+      marginTop: 4,       // reduced gap above tools
+      marginBottom: 24,   // tighter space below tools
       display: 'flex',
-      flexWrap: 'wrap',
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 12,
+      gap: 4,
       minWidth: 320,
       maxWidth: 700,
       width: '100%',
+      minHeight: 84,
+      height: 84,
     }}>
-      {/* Color buttons */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ flex: 7, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: 4, alignContent: 'center', justifyItems: 'center', borderRight: '2px solid #353a40', paddingRight: 2 }}>
         {COLORS.map(c => (
           <button
             key={c}
             className="btn btn-sm"
-            style={{ background: c, border: color === c ? '2px solid #a7bfff' : '2px solid #fff', width: 24, height: 24, margin: 0, padding: 0, borderRadius: 4, boxShadow: color === c ? '0 0 6px #a7bfff' : 'none' }}
+            style={{ background: c, border: color === c ? '2.5px solid #a7bfff' : '2px solid #fff', width: 24, height: 24, margin: 0, padding: 0, borderRadius: 6, boxShadow: color === c ? '0 0 8px #a7bfff' : 'none', transition: 'border 0.2s, box-shadow 0.2s' }}
             onClick={() => { setColor(c); setTool('pen'); setIsEraser(false); }}
             disabled={disabled}
+            title={c}
           />
         ))}
       </div>
-      {/* Tool buttons */}
-      <div style={{ display: 'flex', gap: 4 }}>
-        <button className={`btn btn-sm ${tool === 'pen' ? 'btn-primary' : ''}`} style={{ background: tool === 'pen' ? '#b39ddb' : '#fff', border: '1px solid #888' }} onClick={() => { setTool('pen'); setIsEraser(false); }} disabled={disabled} title="Pen">✏️</button>
-        <button className={`btn btn-sm ${tool === 'eraser' ? 'btn-warning' : ''}`} onClick={() => { setTool('eraser'); setIsEraser(true); }} disabled={disabled} title="Eraser">🧽</button>
-        <button className={`btn btn-sm ${tool === 'fill' ? 'btn-info' : ''}`} onClick={() => { setTool('fill'); setIsEraser(false); }} disabled={disabled} title="Fill">🪣</button>
-        <button className="btn btn-sm btn-light" onClick={onUndo} disabled={disabled || !canUndo} title="Undo" style={{ opacity: (disabled || !canUndo) ? 0.5 : 1, background: (disabled || !canUndo) ? '#444' : '#fff', color: '#23272b', fontWeight: 700, border: '1px solid #888' }}>↩️</button>
-      </div>
-      {/* Size buttons */}
-      <div style={{ display: 'flex', gap: 4 }}>
-        {SIZES.map(s => (
+      <div style={{ flex: 3, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: 4, alignItems: 'center', justifyItems: 'center', paddingLeft: 2 }}>
+        {toolButtons.slice(0, 9).map(btn => (
           <button
-            key={s}
+            key={btn.key}
             className="btn btn-sm btn-light"
-            style={{ width: 28, height: 28, border: width === s ? '2px solid #a7bfff' : '1px solid #888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: width === s ? '0 0 6px #a7bfff' : 'none' }}
-            onClick={() => setWidth(s)}
-            disabled={disabled}
+            onClick={btn.onClick}
+            disabled={btn.disabled}
+            title={btn.title}
+            style={{ width: 24, height: 24, borderRadius: 6, margin: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, ...btn.style }}
           >
-            <span style={{ display: 'inline-block', background: '#222', borderRadius: '50%', width: s, height: s }} />
+            {btn.icon}
           </button>
         ))}
       </div>

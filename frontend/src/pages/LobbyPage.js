@@ -25,6 +25,8 @@ export default function LobbyPage() {
 
   if (!room) return null;
   const isHost = room.players.find(p => p.userId === user.userId)?.isHost;
+  const readyCount = room.players.filter(p => p.isReady).length;
+  const canStart = isHost && room.players.length >= 2;
 
   const handleStart = () => {
     socket.emit('start-game', { code: room.code, userId: user.userId });
@@ -91,28 +93,54 @@ export default function LobbyPage() {
                     <button
                       onClick={handleStart}
                       className="modern-lobby-btn w-100 mt-4 animate__animated animate__pulse animate__infinite"
-                      disabled={showSettingsSaved === true}
+                      disabled={!canStart}
                       style={{
                         fontWeight: 800,
                         fontSize: 26,
                         borderRadius: 20,
                         padding: '22px 0',
-                        background: 'linear-gradient(90deg, #8ec5fc 0%, #6e44ff 100%)',
+                        background: canStart ? 'linear-gradient(90deg, #7f53ac 0%, #647dee 100%)' : 'linear-gradient(90deg, #444 0%, #23272b 100%)',
                         border: 'none',
-                        color: '#fff',
+                        color: canStart ? '#fff' : '#bbb',
                         letterSpacing: 2,
-                        boxShadow: '0 4px 24px #6e44ff44, 0 0 8px #8ec5fc33',
+                        boxShadow: canStart ? '0 4px 24px #7f53ac44, 0 0 8px #647dee33' : 'none',
                         transition: 'background 0.3s, color 0.3s, transform 0.18s, box-shadow 0.3s',
                         marginTop: 18,
-                        textShadow: '0 2px 8px #23272b44',
+                        textShadow: canStart ? '0 2px 8px #23272b44' : 'none',
                         outline: 'none',
-                        cursor: 'pointer',
+                        cursor: canStart ? 'pointer' : 'not-allowed',
+                        opacity: canStart ? 1 : 0.7,
+                        position: 'relative',
+                        overflow: 'hidden',
                       }}
-                      onMouseEnter={e => { e.target.style.background = 'linear-gradient(90deg, #a777e3 0%, #8ec5fc 100%)'; e.target.style.color = '#23272b'; e.target.style.transform = 'scale(1.06)'; e.target.style.boxShadow = '0 4px 32px #a777e388, 0 0 12px #8ec5fc55'; }}
-                      onMouseLeave={e => { e.target.style.background = 'linear-gradient(90deg, #8ec5fc 0%, #6e44ff 100%)'; e.target.style.color = '#fff'; e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = '0 4px 24px #6e44ff44, 0 0 8px #8ec5fc33'; }}
+                      onMouseEnter={e => { if (canStart) { e.target.style.background = 'linear-gradient(90deg, #a777e3 0%, #8ec5fc 100%)'; e.target.style.color = '#23272b'; e.target.style.transform = 'scale(1.06)'; e.target.style.boxShadow = '0 4px 32px #a777e388, 0 0 12px #8ec5fc55'; } }}
+                      onMouseLeave={e => { if (canStart) { e.target.style.background = 'linear-gradient(90deg, #7f53ac 0%, #647dee 100%)'; e.target.style.color = '#fff'; e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = '0 4px 24px #7f53ac44, 0 0 8px #647dee33'; } }}
                     >
-                      🚀 Start Game
+                      <span style={{ fontSize: 28, marginRight: 10 }}>🚀</span> Start Game
                     </button>
+                  )}
+                  {isHost && room.players.length < 2 && (
+                    <div style={{
+                      background: 'rgba(255,77,79,0.13)',
+                      color: '#ff4d4f',
+                      marginTop: 14,
+                      fontWeight: 700,
+                      borderRadius: 12,
+                      padding: '14px 18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      fontSize: 17,
+                      boxShadow: '0 2px 12px #ff4d4f22',
+                      border: '1.5px solid #ff4d4f55',
+                      letterSpacing: 1,
+                      maxWidth: 320,
+                      width: '100%',
+                      justifyContent: 'center',
+                    }}>
+                      <span style={{ fontSize: 22, marginRight: 6 }}>⚠️</span>
+                      At least 2 players are required to start the game.
+                    </div>
                   )}
                 </div>
                 {/* Right: Settings */}

@@ -13,6 +13,7 @@ module.exports = function gameHandler(io, socket) {
     if (!room) return callback && callback({ error: 'Room not found' });
     const host = room.players.find(p => p.isHost);
     if (!host || host.userId !== userId) return callback && callback({ error: 'Only host can start' });
+    if (room.players.length < 2) return callback && callback({ error: 'At least 2 players are required to start the game.' });
     // Shuffle player order
     const playerOrder = shuffleArray(room.players.map(p => p.userId));
     room.status = 'in-progress';

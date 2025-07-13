@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { useSocket } from '../contexts/SocketContext';
@@ -29,6 +29,13 @@ export default function LeaderboardPage() {
     navigate('/');
   };
 
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => navigate('/');
+    socket.on('room-closed', handler);
+    return () => { socket.off('room-closed', handler); };
+  }, [socket, navigate]);
+
   return (
     <div className="container" style={{ maxWidth: 500, margin: '48px auto', background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)', borderRadius: 20, padding: 36, boxShadow: '0 8px 40px #000a', textAlign: 'center', position: 'relative' }}>
       <div style={{ position: 'absolute', top: -36, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '50%', width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px #0006' }}>
@@ -44,9 +51,22 @@ export default function LeaderboardPage() {
       <div style={{ background: '#23272b', borderRadius: 14, padding: 18, boxShadow: '0 2px 12px #0004', marginBottom: 24 }}>
         <ScoreBoard players={leaderboard || room?.players || []} showBadges />
       </div>
-      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', gap: 16 }}>
-        {isHost && <button onClick={handleReplay} className="btn btn-primary">Play Again</button>}
-        <button onClick={handleHome} className="btn btn-secondary">Exit Game</button>
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 24 }}>
+        <button className="btn btn-primary" onClick={() => {
+          socket.emit('play-again', { code: roomCode, userId: user.userId }, () => {
+            navigate(`/lobby/${roomCode}`);
+          });
+        }}>Play Again</button>
+        <button className="btn btn-danger" onClick={() => {
+          if (user.isHost) {
+            socket.emit('room-closed', { code: roomCode });
+            navigate('/');
+          } else {
+            socket.emit('exit-game', { code: roomCode, userId: user.userId }, () => {
+              navigate('/');
+            });
+          }
+        }}>Exit Game</button>
       </div>
     </div>
   );

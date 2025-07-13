@@ -1,11 +1,14 @@
 import React from 'react';
 
-export default function WordPopup({ words, onSelect }) {
+export default function WordPopup({ words, onSelect, timer }) {
   console.log('WordPopup component rendered!', { words });
 
   return (
     <div style={{ width: '100%', maxWidth: 480, aspectRatio: '6/5', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)', color: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 8px 40px #000a', textAlign: 'center', zIndex: 99999, minWidth: 340, maxWidth: 420, maxHeight: 340, overflowY: 'auto', fontFamily: "'Rajdhani', 'Orbitron', 'Inter', 'Segoe UI', Arial, sans-serif" }}>
+        {typeof timer === 'number' && (
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#1aff7c', marginBottom: 10, letterSpacing: 2, textShadow: '0 2px 8px #1aff7c44' }}>{timer}</div>
+        )}
         <h3 style={{ margin: 0, color: '#a7bfff', letterSpacing: 1, fontFamily: "'Rajdhani', 'Orbitron', 'Inter', 'Segoe UI', Arial, sans-serif" }}>Choose a word to draw</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center', marginTop: 24 }}>
           {words.map((word) => (

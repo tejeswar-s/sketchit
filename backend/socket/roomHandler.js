@@ -108,6 +108,17 @@ module.exports = function roomHandler(io, socket) {
     });
   });
 
+  socket.on('play-again', async ({ code, userId }, callback) => {
+    // No longer needed: just acknowledge
+    callback && callback({ success: true });
+  });
+
+  socket.on('exit-game', async ({ code, userId }, callback) => {
+    await handlePlayerLeave(io, code, userId);
+    socket.leave(code);
+    callback && callback({ success: true });
+  });
+
   socket.on('room-closed', async ({ code }) => {
     const room = await Room.findOne({ code });
     if (!room) return;
@@ -163,27 +174,43 @@ async function handlePlayerLeave(io, code, userId) {
     return;
   }
 
+  if (room.players.length === 1) {
+    // Only one player left: pause/end the game and notify the last player
+    room.status = 'waiting';
+    if (room.gameState) {
+      room.gameState.phase = 'waiting-for-players';
+    }
+    await room.save();
+    io.to(code).emit('room:update', room);
+    io.to(room.players[0].socketId).emit('waiting-for-players', { message: 'All other players have left. Waiting for others to join or exit.' });
+    return;
+  }
+
   let hostChanged = false;
+  let drawerWasHost = false;
   if (leavingPlayer.isHost && room.players.length > 0) {
     room.players[0].isHost = true;
     hostChanged = true;
+    // Check if host was also the drawer
+    if (room.gameState && room.gameState.drawingPlayerId === userId) {
+      drawerWasHost = true;
+    }
   }
 
-  let drawerChanged = false;
   if (room.gameState && room.gameState.drawingPlayerId === userId && room.players.length > 0) {
-    const nextDrawerId = getNextDrawer(room.players, userId);
-    room.gameState.drawingPlayerId = nextDrawerId;
-    room.gameState.wordChoices = [];
-    room.gameState.currentWord = '';
-    room.gameState.guesses = [];
-    room.gameState.hint = '';
-    room.gameState.phase = 'selecting-word';
-    drawerChanged = true;
+    // Instead of assigning a new drawer, end the round with 0 scores and reveal the word
+    const gameHandler = require('./gameHandler');
+    // Set all guesses to incorrect and score 0
+    room.gameState.guesses = room.players.map(p => ({ userId: p.userId, guess: '', correct: false, score: 0 }));
+    await room.save();
+    await gameHandler.endRound(io, code);
+    // Host change event will be emitted below if needed
+    return; // End here, as endRound will handle the next round
   }
 
   await room.save();
   io.to(code).emit('room:update', room);
   if (hostChanged) io.to(code).emit('host-changed', { newHostId: room.players[0].userId });
-  if (drawerChanged) io.to(code).emit('drawer-changed', { newDrawerId: room.gameState.drawingPlayerId });
-  if (drawerChanged) io.to(code).emit('round-restart', { drawerId: room.gameState.drawingPlayerId });
+  if (drawerWasHost) io.to(code).emit('drawer-changed', { newDrawerId: room.gameState.drawingPlayerId });
+  if (drawerWasHost) io.to(code).emit('round-restart', { drawerId: room.gameState.drawingPlayerId });
 }
