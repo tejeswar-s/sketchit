@@ -6,12 +6,18 @@ const { MAX_PLAYERS } = require('../shared/constants');
 async function createRoom(req, res) {
   const { name, avatar } = req.body;
   const code = generateRoomCode();
-  const room = new Room({
-    code,
-    players: [{ userId: req.body.userId, name, avatar, isHost: true }],
-  });
-  await room.save();
-  res.status(201).json(room);
+  
+  try {
+    const room = new Room({
+      code,
+      players: [{ userId: req.body.userId, name, avatar, isHost: true }],
+    });
+    await room.save();
+    res.status(201).json(room);
+  } catch (error) {
+    console.error(`Error creating room:`, error);
+    res.status(500).json({ message: 'Failed to create room' });
+  }
 }
 
 // Join an existing room
@@ -39,9 +45,18 @@ async function leaveRoom(req, res) {
 // Get room info
 async function getRoom(req, res) {
   const { code } = req.params;
-  const room = await Room.findOne({ code });
-  if (!room) return res.status(404).json({ message: 'Room not found' });
-  res.json(room);
+  
+  try {
+    const room = await Room.findOne({ code });
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+    
+    res.json(room);
+  } catch (error) {
+    console.error(`Error finding room ${code}:`, error);
+    res.status(500).json({ message: 'Server error' });
+  }
 }
 
 // Update room settings

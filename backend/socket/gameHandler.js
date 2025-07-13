@@ -1,6 +1,6 @@
 const Room = require('../models/Room');
-const words = require('../shared/words');
-const { shuffleArray, getHint, calculateScore } = require('../shared/utils');
+const { wordCategories, defaultCategory } = require('../shared/words');
+const { shuffleArray, getHint, calculateScore, isCloseGuess } = require('../shared/utils');
 
 // In-memory timers (reset on server restart)
 const roomTimers = {};
@@ -54,17 +54,37 @@ module.exports = function gameHandler(io, socket) {
     if (userId === room.gameState.drawingPlayerId) return callback && callback({ error: 'Drawer cannot guess' });
     // If already guessed correctly, ignore
     if (room.gameState.guesses.find(g => g.userId === userId && g.correct)) return callback && callback({ error: 'Already guessed' });
-    const correct = guess.trim().toLowerCase() === room.gameState.currentWord.toLowerCase();
+    
+    const guessLower = guess.trim().toLowerCase();
+    const correctWord = room.gameState.currentWord.toLowerCase();
+    const correct = guessLower === correctWord;
+    
+    // Check if guess is close (differs by only one character)
+    const isClose = !correct && isCloseGuess(guessLower, correctWord);
+    
     let score = 0;
     if (correct) {
       score = calculateScore(room.gameState.timer, room.settings.roundTime);
       const player = room.players.find(p => p.userId === userId);
       if (player) player.score += score;
     }
-    room.gameState.guesses.push({ userId, guess, correct, time: Date.now(), score });
+    
+    room.gameState.guesses.push({ userId, guess, correct, isClose, time: Date.now(), score });
     await room.save();
-    io.to(code).emit('guess-result', { userId, guess, correct, score });
-    callback && callback({ correct, score });
+    
+    // Emit to all players with different data for the guesser vs others
+    io.to(code).emit('guess-result', { 
+      userId, 
+      guess, 
+      correct, 
+      isClose,
+      score,
+      // Only show close status to the user who made the guess
+      showCloseToUser: userId 
+    });
+    
+    callback && callback({ correct, isClose, score });
+    
     // End round if all non-drawers guessed
     const nonDrawers = room.players.filter(p => p.userId !== room.gameState.drawingPlayerId);
     const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
@@ -128,7 +148,11 @@ async function startRound(io, code) {
   // Rotate drawer
   const drawerId = room.playerOrder[room.drawerIndex];
   const wordCount = room.settings.wordCount || 3;
-  const wordChoices = shuffleArray([...words]).slice(0, wordCount);
+  
+  // Get theme from settings, default to general
+  const theme = room.settings?.theme || defaultCategory;
+  const availableWords = wordCategories[theme] || wordCategories[defaultCategory];
+  const wordChoices = shuffleArray([...availableWords]).slice(0, wordCount);
 
   room.gameState = {
     ...room.gameState,
@@ -312,10 +336,24 @@ async function endRound(io, code) {
 
   // Normal round end logic
   room.gameState.phase = 'round-end';
-  // Award drawer points: e.g., 500 * number of correct guessers
+  // Award drawer points: e.g., 50 * number of correct guessers
   const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
   const drawer = room.players.find(p => p.userId === room.gameState.drawingPlayerId);
-  if (drawer) drawer.score += correctGuessers.length * 50;
+  const drawerScore = correctGuessers.length * 50;
+  if (drawer) drawer.score += drawerScore;
+  
+  // Add drawer's score to guesses array for round summary display
+  const drawerGuess = {
+    userId: room.gameState.drawingPlayerId,
+    guess: '',
+    correct: false,
+    isClose: false,
+    time: Date.now(),
+    score: drawerScore,
+    isDrawer: true
+  };
+  room.gameState.guesses.push(drawerGuess);
+  
   await room.save(); // Save updated scores before emitting
   io.to(code).emit('room:update', room); // Emit updated room state
   console.log('Emitting round-end with guesses:', room.gameState.guesses);

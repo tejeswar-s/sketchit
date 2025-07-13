@@ -10,6 +10,7 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
   const [showTimerBar, setShowTimerBar] = useState(settings.showTimerBar ?? true);
   const [language, setLanguage] = useState(settings.language || 'en');
   const [wordCount, setWordCount] = useState(settings.wordCount || 3);
+  const [theme, setTheme] = useState(settings.theme || 'general');
 
   useEffect(() => {
     setRoundTime(settings.roundTime || 80);
@@ -21,6 +22,7 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
     setShowTimerBar(settings.showTimerBar ?? true);
     setLanguage(settings.language || 'en');
     setWordCount(settings.wordCount || 3);
+    setTheme(settings.theme || 'general');
   }, [settings]);
 
   const handleHintCountChange = (n) => {
@@ -46,6 +48,7 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
       showTimerBar,
       language,
       wordCount: Number(wordCount),
+      theme,
     });
     
     const newSettings = {
@@ -58,6 +61,7 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
       showTimerBar,
       language,
       wordCount: Number(wordCount),
+      theme,
     };
     // Remove customWords and maxPlayers if present
     delete newSettings.customWords;
@@ -104,6 +108,21 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
       <div className="form-check form-switch" style={{ marginBottom: 8 }}>
         <input className="form-check-input" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost || viewOnly} />
         <label className="form-check-label" htmlFor="showTimerBar">Show Timer Bar</label>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <label>Game Theme: </label>
+        <select value={theme} onChange={e => setTheme(e.target.value)} disabled={!isHost || viewOnly} className="form-select form-select-sm" style={{ width: 140, marginLeft: 8 }}>
+          <option value="general">General</option>
+          <option value="countries">Countries</option>
+          <option value="animals">Animals</option>
+          <option value="trees">Trees</option>
+          <option value="fruits">Fruits</option>
+          <option value="food">Food</option>
+          <option value="sports">Sports</option>
+          <option value="vehicles">Vehicles</option>
+          <option value="jobs">Jobs</option>
+          <option value="colors">Colors</option>
+        </select>
       </div>
       <div style={{ marginBottom: 8 }}>
         <label>Language: </label>

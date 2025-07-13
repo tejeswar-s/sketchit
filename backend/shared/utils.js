@@ -44,4 +44,33 @@ function getNextDrawer(players, currentDrawerId) {
   return null;
 }
 
-module.exports = { generateRoomCode, maskWord, shuffleArray, getHint, calculateScore, getNextDrawer }; 
+function isCloseGuess(guess, correctWord) {
+  // Check if guess differs by only one character from the correct word
+  if (Math.abs(guess.length - correctWord.length) > 1) return false;
+  
+  // If lengths are the same, check for single character difference
+  if (guess.length === correctWord.length) {
+    let differences = 0;
+    for (let i = 0; i < guess.length; i++) {
+      if (guess[i] !== correctWord[i]) {
+        differences++;
+        if (differences > 1) return false;
+      }
+    }
+    return differences === 1;
+  }
+  
+  // If lengths differ by 1, check if one is a substring of the other
+  const shorter = guess.length < correctWord.length ? guess : correctWord;
+  const longer = guess.length < correctWord.length ? correctWord : guess;
+  
+  // Check if shorter word can be formed by removing one character from longer word
+  for (let i = 0; i < longer.length; i++) {
+    const testWord = longer.slice(0, i) + longer.slice(i + 1);
+    if (testWord === shorter) return true;
+  }
+  
+  return false;
+}
+
+module.exports = { generateRoomCode, maskWord, shuffleArray, getHint, calculateScore, getNextDrawer, isCloseGuess }; 

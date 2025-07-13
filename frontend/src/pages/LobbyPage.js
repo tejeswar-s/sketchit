@@ -5,6 +5,7 @@ import SettingsPanel from '../components/SettingsPanel';
 import { useGame } from '../contexts/GameContext';
 import { useSocket } from '../contexts/SocketContext';
 import useSocketEvents from '../hooks/useSocketEvents';
+import { shareRoom } from '../utils/shareUtils';
 
 export default function LobbyPage() {
   const { roomCode } = useParams();
@@ -13,6 +14,7 @@ export default function LobbyPage() {
   const socket = useSocket();
   const [showSettingsSaved, setShowSettingsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
 
   useSocketEvents({
     'room:update': (updatedRoom) => setRoom(updatedRoom),
@@ -48,6 +50,12 @@ export default function LobbyPage() {
     setTimeout(() => setCopied(false), 1200);
   };
 
+  const handleShare = async () => {
+    const result = await shareRoom(room.code);
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
+  };
+
   return (
     <div className="lobby-bg min-vh-100 d-flex flex-column justify-content-center align-items-center position-relative" style={{ background: 'linear-gradient(135deg, #181a1b 0%, #23272b 100%)', fontFamily: 'Inter, Segoe UI, Arial, sans-serif', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
@@ -69,11 +77,12 @@ export default function LobbyPage() {
               <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4 gap-3" style={{ position: 'relative', zIndex: 1 }}>
                 <div className="text-center text-md-start">
                   <h2 className="fw-bold mb-1" style={{ letterSpacing: 2, color: '#a777e3', textShadow: '0 2px 16px #6e44ff55, 0 0 8px #a777e344' }}>Lobby</h2>
-                  <div className="small text-muted mb-2" style={{ color: '#b0b3b8' }}>Share this code with friends to join!</div>
+                  <div className="small text-muted mb-2" style={{ color: '#b0b3b8' }}>Share this room with friends to join!</div>
                 </div>
                 <div className="room-code-box d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-3" style={{ background: 'rgba(167,119,227,0.10)', border: '1.5px solid #a777e3', color: '#a777e3', fontWeight: 700, fontSize: 28, letterSpacing: 2, boxShadow: '0 2px 8px #a777e322', userSelect: 'all' }}>
                   <span style={{ fontFamily: 'monospace', fontSize: 28 }}>{room.code}</span>
                   <button onClick={handleCopy} className="btn btn-sm btn-primary ms-2" style={{ fontWeight: 700, fontSize: 18, borderRadius: 8, padding: '4px 14px', boxShadow: '0 2px 4px #a777e322', border: 'none', background: '#6e44ff', color: '#fff' }}>{copied ? 'Copied!' : 'Copy'}</button>
+                  <button onClick={handleShare} className="btn btn-sm btn-success ms-2" style={{ fontWeight: 700, fontSize: 18, borderRadius: 8, padding: '4px 14px', boxShadow: '0 2px 4px #28a74522', border: 'none', background: '#28a745', color: '#fff' }}>{shared ? 'Shared!' : 'Share'}</button>
                 </div>
               </div>
               <hr style={{ borderColor: '#a777e344', margin: '24px 0 18px 0', position: 'relative', zIndex: 1 }} />

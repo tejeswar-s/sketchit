@@ -19,7 +19,13 @@ export default function ChatBox({ messages, onSend, disabled }) {
     <div style={{ background: '#23272b', borderRadius: 10, padding: 0, color: '#f3f3fa', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 240, border: 'none', boxShadow: '0 2px 16px #0006', position: 'relative', justifyContent: 'flex-end' }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 10px 0 10px', marginBottom: 0 }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ color: msg.system ? '#a7a7b3' : msg.correct ? '#1aff7c' : '#f3f3fa', fontWeight: msg.system ? 500 : 600, fontSize: 15, marginBottom: 2, wordBreak: 'break-word' }}>
+          <div key={i} style={{ 
+            color: msg.system ? '#a7a7b3' : msg.correct ? '#1aff7c' : msg.isClose ? '#ffd700' : '#f3f3fa', 
+            fontWeight: msg.system ? 500 : 600, 
+            fontSize: 15, 
+            marginBottom: 2, 
+            wordBreak: 'break-word' 
+          }}>
             <span style={{ fontWeight: 700 }}>{msg.name}:</span> <span style={{ fontWeight: 500 }}>{msg.message}</span>
           </div>
         ))}

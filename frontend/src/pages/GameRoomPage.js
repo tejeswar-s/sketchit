@@ -284,8 +284,20 @@ export default function GameRoomPage() {
         setDrawingData(data => [...data, line]);
       }
     },
-    'guess-result': ({ userId, guess, correct, score }) => {
-      setMessages(msgs => [...msgs, { name: room?.players.find(p => p.userId === userId)?.name || 'Player', message: guess, correct }]);
+    'guess-result': ({ userId, guess, correct, isClose, score, showCloseToUser }) => {
+      const playerName = room?.players.find(p => p.userId === userId)?.name || 'Player';
+      const isMyGuess = userId === user.userId;
+      
+      // Show close status only to the user who made the guess
+      const showClose = isMyGuess && isClose && !correct;
+      
+      setMessages(msgs => [...msgs, { 
+        name: playerName, 
+        message: guess, 
+        correct,
+        isClose: showClose // Only show close status to the guesser
+      }]);
+      
       if (userId === user.userId && correct) setDisabledGuess(true);
     },
     'hint-update': ({ hint }) => {
@@ -362,12 +374,14 @@ export default function GameRoomPage() {
   }, [gameState?.phase, isDrawer, gameState?.wordChoices, user?.userId, gameState?.drawingPlayerId]);
 
   // Only use gameState.wordChoices for the popup
-  const shouldShowWordPopup =
+  const isSelectingWord =
     gameState &&
     gameState.phase === 'selecting-word' &&
-    isDrawer &&
     Array.isArray(gameState.wordChoices) &&
     gameState.wordChoices.length > 0;
+
+  const shouldShowWordPopup = isSelectingWord && isDrawer;
+  const shouldShowWaitingForDrawer = isSelectingWord && !isDrawer;
 
   // In handleWordSelect, do NOT set any local state for the popup
   const handleWordSelect = (word) => {
@@ -617,12 +631,12 @@ export default function GameRoomPage() {
           {/* Always reserve space for the canvas/overlay to prevent layout jump */}
           {/* TODO: For canvas precision, ensure Canvas uses ref/clientWidth/clientHeight for drawing calculations */}
           {/* Show WordPopup as overlay over drawing section during word selection */}
-          {shouldShowWordPopup && isDrawer ? (
+          {shouldShowWordPopup && (
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
               <WordPopup words={gameState.wordChoices} onSelect={handleWordSelect} timer={wordSelectTimer} />
             </div>
-          ) : null}
-          {shouldShowWordPopup && !isDrawer ? (
+          )}
+          {shouldShowWaitingForDrawer && (
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
               <div style={{
                 color: '#fff',
@@ -649,7 +663,7 @@ export default function GameRoomPage() {
                 <span style={{ fontSize: 16, color: '#a7bfff', fontWeight: 400, marginTop: 8 }}>Get ready to guess!</span>
               </div>
             </div>
-          ) : null}
+          )}
           <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <Canvas
               isDrawing={isDrawer && phase === 'drawing'}
@@ -661,19 +675,21 @@ export default function GameRoomPage() {
               color={color}
               width={width}
             />
-            <CanvasControls
-              color={color}
-              setColor={setColor}
-              width={width}
-              setWidth={setWidth}
-              tool={tool}
-              setTool={setTool}
-              isEraser={isEraser}
-              setIsEraser={setIsEraser}
-              disabled={!(isDrawer && phase === 'drawing')}
-              onUndo={handleUndo}
-              canUndo={drawingData.length > 0}
-            />
+            {isDrawer && phase === 'drawing' && (
+              <CanvasControls
+                color={color}
+                setColor={setColor}
+                width={width}
+                setWidth={setWidth}
+                tool={tool}
+                setTool={setTool}
+                isEraser={isEraser}
+                setIsEraser={setIsEraser}
+                disabled={false}
+                onUndo={handleUndo}
+                canUndo={drawingData.length > 0}
+              />
+            )}
           </div>
         </div>
         {/* Right: Chat */}
@@ -684,8 +700,8 @@ export default function GameRoomPage() {
               <div
                 key={i}
                 style={{
-                  background: msg.system ? 'transparent' : msg.correct ? 'rgba(26,255,124,0.08)' : 'rgba(255,255,255,0.03)',
-                  color: msg.system ? '#a7a7b3' : msg.correct ? '#1aff7c' : '#f3f3fa',
+                  background: msg.system ? 'transparent' : msg.correct ? 'rgba(26,255,124,0.08)' : msg.isClose ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
+                  color: msg.system ? '#a7a7b3' : msg.correct ? '#1aff7c' : msg.isClose ? '#ffd700' : '#f3f3fa',
                   fontWeight: msg.system ? 500 : 600,
                   fontSize: 15,
                   marginBottom: 6,
@@ -693,8 +709,8 @@ export default function GameRoomPage() {
                   padding: msg.system ? '2px 0' : '7px 12px',
                   wordBreak: 'break-word',
                   overflowWrap: 'break-word',
-                  boxShadow: msg.correct ? '0 0 6px #1aff7c33' : 'none',
-                  border: msg.correct ? '1px solid #1aff7c55' : 'none',
+                  boxShadow: msg.correct ? '0 0 6px #1aff7c33' : msg.isClose ? '0 0 6px #ffd70033' : 'none',
+                  border: msg.correct ? '1px solid #1aff7c55' : msg.isClose ? '1px solid #ffd70055' : 'none',
                   transition: 'background 0.2s',
                   display: 'flex',
                   alignItems: 'center',
@@ -704,7 +720,7 @@ export default function GameRoomPage() {
                   flexWrap: 'wrap',
                 }}
                 onMouseOver={e => { if (!msg.system) e.currentTarget.style.background = 'rgba(167,123,255,0.10)'; }}
-                onMouseOut={e => { if (!msg.system) e.currentTarget.style.background = msg.correct ? 'rgba(26,255,124,0.08)' : 'rgba(255,255,255,0.03)'; }}
+                onMouseOut={e => { if (!msg.system) e.currentTarget.style.background = msg.correct ? 'rgba(26,255,124,0.08)' : msg.isClose ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)'; }}
               >
                 {!msg.system && (
                   <span style={{ fontWeight: 700, color: '#a7bfff', marginRight: 6 }}>{msg.name}:</span>
@@ -813,6 +829,68 @@ export default function GameRoomPage() {
       <Modal open={showDrawerChange} onClose={() => setShowDrawerChange(false)} title="Drawer Changed">
         <div>{drawerChangeMsg}</div>
       </Modal>
+      {/* Round Summary Modal */}
+      <Modal open={showRoundSummary} onClose={() => setShowRoundSummary(false)} title="Round Summary">
+        {roundSummaryData && (
+          <div>
+            <div style={{ marginBottom: 16, textAlign: 'center' }}>
+              <h4 style={{ color: '#a7bfff', marginBottom: 8 }}>The word was: {roundSummaryData.word}</h4>
+              <div style={{ fontSize: 14, color: '#aaa', marginBottom: 16 }}>
+                Drawer: {roundSummaryData.players.find(p => p.userId === roundSummaryData.drawerId)?.name || 'Unknown'}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <h5 style={{ color: '#fff', marginBottom: 8 }}>Round Scores:</h5>
+              <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                {roundSummaryData.players.map(player => {
+                  const guess = roundSummaryData.guesses.find(g => g.userId === player.userId);
+                  const isDrawer = player.userId === roundSummaryData.drawerId;
+                  const isCorrect = guess?.correct;
+                  const isClose = guess?.isClose;
+                  const isDrawerGuess = guess?.isDrawer;
+                  
+                  return (
+                    <div
+                      key={player.userId}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        marginBottom: 4,
+                        borderRadius: 6,
+                        background: isDrawer ? 'rgba(167,123,255,0.1)' : isCorrect ? 'rgba(26,255,124,0.1)' : isClose ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',
+                        border: isDrawer ? '1px solid #a777e3' : isCorrect ? '1px solid #1aff7c' : isClose ? '1px solid #ffd700' : '1px solid transparent'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 20 }}>{player.avatar?.emoji || '👤'}</span>
+                        <span style={{ color: '#fff', fontWeight: 600 }}>{player.name}</span>
+                        {isDrawer && <span style={{ color: '#a777e3', fontSize: 12 }}>(Drawer)</span>}
+                        {isCorrect && <span style={{ color: '#1aff7c', fontSize: 12 }}>✓ Correct</span>}
+                        {isClose && !isCorrect && <span style={{ color: '#ffd700', fontSize: 12 }}>~ Close</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {guess && !isDrawer && !isDrawerGuess && (
+                          <span style={{ color: '#aaa', fontSize: 12 }}>"{guess.guess}"</span>
+                        )}
+                        {isDrawerGuess && (
+                          <span style={{ color: '#a777e3', fontSize: 12 }}>+{guess?.score || 0} for drawing</span>
+                        )}
+                        <span style={{ color: '#ffd700', fontWeight: 'bold' }}>
+                          {guess?.score || 0} pts
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+      
       {/* Round Restarted Modal */}
       <Modal open={showRoundRestart} onClose={() => setShowRoundRestart(false)} title="Round Restarted">
         <div>{roundRestartMsg}</div>

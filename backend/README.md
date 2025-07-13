@@ -56,6 +56,13 @@ SketchIt is a full-featured MERN stack multiplayer drawing and guessing game. It
 - Modern, visually balanced color and tool palette
 - All major bugs and UI/UX issues resolved
 
+### Social Features
+- **Direct Room Sharing**: Share room links that allow friends to join directly without entering room codes
+- **Native Share API**: Uses device's native share functionality when available (mobile-friendly)
+- **Fallback Clipboard**: Automatically copies share link to clipboard as fallback
+- **One-Click Join**: Direct join page with name input for seamless room entry
+- **Room Validation**: Checks room existence before allowing join attempts
+
 ---
 
 ## Getting Started

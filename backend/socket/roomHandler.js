@@ -1,10 +1,11 @@
 const Room = require('../models/Room');
 const { generateRoomCode, getNextDrawer, shuffleArray } = require('../shared/utils');
 const { MAX_PLAYERS } = require('../shared/constants');
-const words = require('../shared/words');
+const { wordCategories, defaultCategory } = require('../shared/words');
 
-function generateWords(count) {
-  return shuffleArray([...words]).slice(0, count);
+function generateWords(count, theme = defaultCategory) {
+  const availableWords = wordCategories[theme] || wordCategories[defaultCategory];
+  return shuffleArray([...availableWords]).slice(0, count);
 }
 
 module.exports = function roomHandler(io, socket) {
@@ -84,11 +85,12 @@ module.exports = function roomHandler(io, socket) {
     room.playerOrder = playerOrder;
     const drawerId = playerOrder[0];
 
+    const theme = settings.theme || defaultCategory;
     room.gameState = {
       round: 1,
       maxRounds,
       drawingPlayerId: drawerId,
-      wordChoices: generateWords(wordCount),
+      wordChoices: generateWords(wordCount, theme),
       currentWord: '',
       guesses: [],
       hint: '',
