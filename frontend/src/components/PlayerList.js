@@ -78,6 +78,24 @@ export default function PlayerList({ players, hostId, drawerId, myUserId, onMute
                 {micStatus[p.userId] ? '🎤' : '🎙️'}
               </button>
               {p.name}
+              {p.pending && (
+                <span style={{
+                  background: 'linear-gradient(90deg, #a777e3 60%, #6e44ff 100%)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: 12,
+                  borderRadius: 8,
+                  padding: '2px 8px',
+                  marginLeft: 6,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  boxShadow: '0 1px 6px #6e44ff33',
+                  letterSpacing: 0.5,
+                }}>
+                  Waiting...
+                </span>
+              )}
               {/* Ready badge */}
               {p.isReady && (
                 <span style={{

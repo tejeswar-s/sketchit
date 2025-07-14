@@ -10,6 +10,8 @@ const playerSchema = new mongoose.Schema({
   isDrawing: { type: Boolean, default: false },
   isMuted: { type: Boolean, default: false },
   isKicked: { type: Boolean, default: false },
+  pending: { type: Boolean, default: false }, // true if waiting to join next round
+  nextRoundPending: { type: Boolean, default: false }, // true if should be activated at next round
 }, { _id: false });
 
 const roomSchema = new mongoose.Schema({

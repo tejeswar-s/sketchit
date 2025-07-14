@@ -86,7 +86,7 @@ module.exports = function gameHandler(io, socket) {
     callback && callback({ correct, isClose, score });
     
     // End round if all non-drawers guessed
-    const nonDrawers = room.players.filter(p => p.userId !== room.gameState.drawingPlayerId);
+    const nonDrawers = room.players.filter(p => p.userId !== room.gameState.drawingPlayerId && !p.pending && !p.nextRoundPending);
     const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
     if (nonDrawers.every(p => correctGuessers.includes(p.userId))) {
       endRound(io, code);
@@ -128,6 +128,10 @@ module.exports = function gameHandler(io, socket) {
     // Broadcast to all clients in the room (including sender for consistency)
     io.to(roomCode).emit('fill', { x, y, color });
   });
+
+  socket.on('force-end-round', async ({ code }) => {
+    await endRound(io, code);
+  });
 };
 
 // --- Helper Functions ---
@@ -144,6 +148,24 @@ async function startRound(io, code) {
   clearRoomTimers(code);
   const room = await Room.findOne({ code });
   if (!room) return;
+
+  // Activate only those who were marked nextRoundPending at the end of the previous round
+  let newPlayers = false;
+  room.players.forEach(p => {
+    if (p.nextRoundPending) {
+      p.pending = false;
+      p.nextRoundPending = false;
+      p.score = 0;
+      if (!room.playerOrder.includes(p.userId)) {
+        room.playerOrder.push(p.userId);
+      }
+      newPlayers = true;
+    }
+  });
+  if (newPlayers) {
+    // Shuffle new players into the order after current drawer
+    // (or just append for simplicity)
+  }
 
   // Rotate drawer
   const drawerId = room.playerOrder[room.drawerIndex];

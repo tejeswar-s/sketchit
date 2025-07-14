@@ -31,7 +31,9 @@ module.exports = function roomHandler(io, socket) {
     if (!room) return callback && callback({ error: 'Room not found' });
     if (room.players.length >= MAX_PLAYERS) return callback && callback({ error: 'Room is full' });
     if (room.players.some(p => p.userId === userId)) return callback && callback({ error: 'Already joined' });
-    room.players.push({ userId, name, avatar, socketId: socket.id });
+    // If game is in-progress, add as pending and nextRoundPending
+    const isPending = room.status === 'in-progress' && room.gameState && room.gameState.phase !== 'waiting';
+    room.players.push({ userId, name, avatar, socketId: socket.id, pending: isPending, nextRoundPending: isPending });
     await room.save();
     socket.join(code);
     currentRoomCode = code;
@@ -201,13 +203,12 @@ async function handlePlayerLeave(io, code, userId) {
 
   if (room.gameState && room.gameState.drawingPlayerId === userId && room.players.length > 0) {
     // Instead of assigning a new drawer, end the round with 0 scores and reveal the word
-    const gameHandler = require('./gameHandler');
     // Set all guesses to incorrect and score 0
     room.gameState.guesses = room.players.map(p => ({ userId: p.userId, guess: '', correct: false, score: 0 }));
     await room.save();
-    await gameHandler.endRound(io, code);
-    // Host change event will be emitted below if needed
-    return; // End here, as endRound will handle the next round
+    // Instead of calling gameHandler.endRound (not exported), emit a custom event to all sockets in the room
+    io.to(code).emit('force-end-round');
+    return; // End here, as the frontend/gameHandler should handle the next round
   }
 
   await room.save();

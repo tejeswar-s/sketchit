@@ -127,6 +127,7 @@ export default function GameRoomPage() {
   const isMuted = room && user ? room.players.find(p => p.userId === user.userId)?.isMuted : false;
   const isHost = room && user ? room.players.find(p => p.userId === user.userId)?.isHost : false;
   const isHostUser = !!room?.players?.find(p => p.userId === user?.userId && p.isHost);
+  const isPending = room && user ? room.players.find(p => p.userId === user.userId)?.pending : false;
 
   // Voice chat hook - must be at top level
   const { speakingUsers } = useVoiceChat({ 
@@ -447,6 +448,18 @@ export default function GameRoomPage() {
       return () => clearInterval(interval);
     }
   }, [phase]);
+
+  // Show a message if the user is pending (joining next round)
+  if (isPending) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'rgba(24,26,27,0.98)' }}>
+        <div style={{ background: '#23272b', color: '#a777e3', borderRadius: 16, padding: '32px 48px', fontSize: 28, fontWeight: 700, boxShadow: '0 2px 16px #6e44ff22', marginBottom: 16 }}>
+          You’ll join next round!
+        </div>
+        <div style={{ color: '#fff', fontSize: 18, opacity: 0.7 }}>Please wait for the current round to finish.</div>
+      </div>
+    );
+  }
 
   // Guard: Only render if user, room, and gameState are set
   if (!user || !room || !gameState) {
