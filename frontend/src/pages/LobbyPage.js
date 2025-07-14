@@ -56,6 +56,11 @@ export default function LobbyPage() {
     setTimeout(() => setShared(false), 2000);
   };
 
+  const handleCloseRoom = () => {
+    socket.emit('room-closed', { code: room.code });
+    navigate('/');
+  };
+
   return (
     <div className="lobby-bg min-vh-100 d-flex flex-column justify-content-center align-items-center position-relative" style={{ background: 'linear-gradient(135deg, #181a1b 0%, #23272b 100%)', fontFamily: 'Inter, Segoe UI, Arial, sans-serif', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
@@ -75,9 +80,30 @@ export default function LobbyPage() {
               </svg>
               {/* Room code box */}
               <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4 gap-3" style={{ position: 'relative', zIndex: 1 }}>
-                <div className="text-center text-md-start">
-                  <h2 className="fw-bold mb-1" style={{ letterSpacing: 2, color: '#a777e3', textShadow: '0 2px 16px #6e44ff55, 0 0 8px #a777e344' }}>Lobby</h2>
-                  <div className="small text-muted mb-2" style={{ color: '#b0b3b8' }}>Share this room with friends to join!</div>
+                <div className="text-center text-md-start d-flex align-items-center gap-3">
+                  <h2 className="fw-bold mb-1" style={{ letterSpacing: 2, color: '#a777e3', textShadow: '0 2px 16px #6e44ff55, 0 0 8px #a777e344', marginBottom: 0 }}>Lobby</h2>
+                  {isHost && room.players.length < 2 && (
+                    <div style={{
+                      background: 'rgba(255,77,79,0.13)',
+                      color: '#ff4d4f',
+                      fontWeight: 700,
+                      borderRadius: 8,
+                      padding: '6px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontSize: 15,
+                      boxShadow: '0 2px 8px #ff4d4f22',
+                      border: '1.5px solid #ff4d4f55',
+                      letterSpacing: 1,
+                      marginLeft: 12,
+                      marginBottom: 0,
+                      height: 36,
+                    }}>
+                      <span style={{ fontSize: 18, marginRight: 4 }}>⚠️</span>
+                      2+ players required
+                    </div>
+                  )}
                 </div>
                 <div className="room-code-box d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-3" style={{ background: 'rgba(167,119,227,0.10)', border: '1.5px solid #a777e3', color: '#a777e3', fontWeight: 700, fontSize: 28, letterSpacing: 2, boxShadow: '0 2px 8px #a777e322', userSelect: 'all' }}>
                   <span style={{ fontFamily: 'monospace', fontSize: 28 }}>{room.code}</span>
@@ -99,62 +125,27 @@ export default function LobbyPage() {
                     onKick={() => {}}
                   />
                   {isHost && (
-                    <button
-                      onClick={handleStart}
-                      className="modern-lobby-btn w-100 mt-4 animate__animated animate__pulse animate__infinite"
-                      disabled={!canStart}
-                      style={{
-                        fontWeight: 800,
-                        fontSize: 26,
-                        borderRadius: 20,
-                        padding: '22px 0',
-                        background: canStart ? 'linear-gradient(90deg, #7f53ac 0%, #647dee 100%)' : 'linear-gradient(90deg, #444 0%, #23272b 100%)',
-                        border: 'none',
-                        color: canStart ? '#fff' : '#bbb',
-                        letterSpacing: 2,
-                        boxShadow: canStart ? '0 4px 24px #7f53ac44, 0 0 8px #647dee33' : 'none',
-                        transition: 'background 0.3s, color 0.3s, transform 0.18s, box-shadow 0.3s',
-                        marginTop: 18,
-                        textShadow: canStart ? '0 2px 8px #23272b44' : 'none',
-                        outline: 'none',
-                        cursor: canStart ? 'pointer' : 'not-allowed',
-                        opacity: canStart ? 1 : 0.7,
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                      onMouseEnter={e => { if (canStart) { e.target.style.background = 'linear-gradient(90deg, #a777e3 0%, #8ec5fc 100%)'; e.target.style.color = '#23272b'; e.target.style.transform = 'scale(1.06)'; e.target.style.boxShadow = '0 4px 32px #a777e388, 0 0 12px #8ec5fc55'; } }}
-                      onMouseLeave={e => { if (canStart) { e.target.style.background = 'linear-gradient(90deg, #7f53ac 0%, #647dee 100%)'; e.target.style.color = '#fff'; e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = '0 4px 24px #7f53ac44, 0 0 8px #647dee33'; } }}
-                    >
-                      <span style={{ fontSize: 28, marginRight: 10 }}>🚀</span> Start Game
-                    </button>
-                  )}
-                  {isHost && room.players.length < 2 && (
-                    <div style={{
-                      background: 'rgba(255,77,79,0.13)',
-                      color: '#ff4d4f',
-                      marginTop: 14,
-                      fontWeight: 700,
-                      borderRadius: 12,
-                      padding: '14px 18px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      fontSize: 17,
-                      boxShadow: '0 2px 12px #ff4d4f22',
-                      border: '1.5px solid #ff4d4f55',
-                      letterSpacing: 1,
-                      maxWidth: 320,
-                      width: '100%',
-                      justifyContent: 'center',
-                    }}>
-                      <span style={{ fontSize: 22, marginRight: 6 }}>⚠️</span>
-                      At least 2 players are required to start the game.
+                    <div className="button-row-center">
+                      <button
+                        onClick={handleStart}
+                        className="button-49"
+                        disabled={!canStart}
+                        style={{ fontWeight: 800, fontSize: 20, borderRadius: 10, outline: 'none', cursor: canStart ? 'pointer' : 'not-allowed', opacity: canStart ? 1 : 0.7, position: 'relative', overflow: 'hidden', letterSpacing: 2 }}
+                      >
+                        Start Game
+                      </button>
+                      <button
+                        onClick={handleCloseRoom}
+                        className="button-89"
+                        style={{ fontWeight: 700, borderRadius: 10 }}
+                      >
+                        Close Room
+                      </button>
                     </div>
                   )}
                 </div>
                 {/* Right: Settings */}
                 <div className="col-lg-7 d-flex flex-column align-items-center align-items-lg-stretch">
-                  <h5 className="fw-bold mb-3" style={{ color: '#a777e3', letterSpacing: 1 }}>Game Settings</h5>
                   <SettingsPanel settings={room.settings} onSave={handleSettingsChange} isHost={isHost} />
                   {showSettingsSaved && (
                     <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'rgba(34,39,43,0.97)', color: '#a777e3', padding: '16px 32px', borderRadius: 14, boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33', zIndex: 9999, fontWeight: 600, fontSize: 18, letterSpacing: 1, backdropFilter: 'blur(8px) saturate(120%)', border: '1.5px solid #23272b', textShadow: '0 0 8px #a777e344' }}>

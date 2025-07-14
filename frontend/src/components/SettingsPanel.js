@@ -72,46 +72,46 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
   };
 
   const content = (
-    <div style={{ background: showAsModal ? '#23272b' : '#222', borderRadius: 8, padding: 12, color: '#fff', marginBottom: 12, minWidth: 300 }}>
-      <h4>Game Settings</h4>
-      <div style={{ marginBottom: 8 }}>
-        <label>Round Time (sec): </label>
-        <input type="number" value={roundTime} min={30} max={180} onChange={e => setRoundTime(e.target.value)} style={{ width: 60, marginLeft: 8 }} disabled={!isHost || viewOnly} />
+    <div className="settings-panel">
+      <h4 className="settings-title">Game Settings</h4>
+      <div className="settings-row">
+        <label className="settings-label">Round Time (sec): </label>
+        <input type="number" value={roundTime} min={30} max={180} onChange={e => setRoundTime(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Max Rounds: </label>
-        <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost || viewOnly} />
+      <div className="settings-row">
+        <label className="settings-label">Max Rounds: </label>
+        <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Number of Hints: </label>
-        <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} style={{ width: 40, marginLeft: 8 }} disabled={!isHost || viewOnly} />
+      <div className="settings-row">
+        <label className="settings-label">Number of Hints: </label>
+        <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} className="settings-input" disabled={!isHost || viewOnly} />
       </div>
       {Array.from({ length: hintCount }).map((_, idx) => (
-        <div key={idx} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
-          <label style={{ marginRight: 8 }}>Hint {idx + 1} timing:</label>
-          <input type="range" min={5} max={95} step={1} value={hintIntervals[idx] || 0} onChange={e => handleHintIntervalChange(idx, Number(e.target.value))} disabled={!isHost || viewOnly} style={{ width: 120, marginRight: 8 }} />
-          <span>{hintIntervals[idx] || 0}%</span>
+        <div key={idx} className="settings-row settings-slider-row">
+          <label className="settings-label">Hint {idx + 1} timing:</label>
+          <input type="range" min={5} max={95} step={1} value={hintIntervals[idx] || 0} onChange={e => handleHintIntervalChange(idx, Number(e.target.value))} disabled={!isHost || viewOnly} className="settings-slider" />
+          <span className="settings-slider-value">{hintIntervals[idx] || 0}%</span>
         </div>
       ))}
-      <div style={{ marginBottom: 8 }}>
-        <label>Word Count (choices for drawer): </label>
-        <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} style={{ width: 40, marginLeft: 8 }} disabled={!isHost || viewOnly} />
+      <div className="settings-row">
+        <label className="settings-label">Word Count (choices for drawer): </label>
+        <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
       </div>
-      <div className="form-check form-switch" style={{ marginBottom: 8 }}>
-        <input className="form-check-input" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost || viewOnly} />
-        <label className="form-check-label" htmlFor="allowUndo">Allow Drawing Undo</label>
+      <div className="settings-row settings-switch-row">
+        <input className="settings-switch" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost || viewOnly} />
+        <label className="settings-label" htmlFor="allowUndo">Allow Drawing Undo</label>
       </div>
-      <div className="form-check form-switch" style={{ marginBottom: 8 }}>
-        <input className="form-check-input" type="checkbox" id="allowChat" checked={allowChat} onChange={e => setAllowChat(e.target.checked)} disabled={!isHost || viewOnly} />
-        <label className="form-check-label" htmlFor="allowChat">Allow Chat</label>
+      <div className="settings-row settings-switch-row">
+        <input className="settings-switch" type="checkbox" id="allowChat" checked={allowChat} onChange={e => setAllowChat(e.target.checked)} disabled={!isHost || viewOnly} />
+        <label className="settings-label" htmlFor="allowChat">Allow Chat</label>
       </div>
-      <div className="form-check form-switch" style={{ marginBottom: 8 }}>
-        <input className="form-check-input" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost || viewOnly} />
-        <label className="form-check-label" htmlFor="showTimerBar">Show Timer Bar</label>
+      <div className="settings-row settings-switch-row">
+        <input className="settings-switch" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost || viewOnly} />
+        <label className="settings-label" htmlFor="showTimerBar">Show Timer Bar</label>
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Game Theme: </label>
-        <select value={theme} onChange={e => setTheme(e.target.value)} disabled={!isHost || viewOnly} className="form-select form-select-sm" style={{ width: 140, marginLeft: 8 }}>
+      <div className="settings-row">
+        <label className="settings-label">Game Theme: </label>
+        <select value={theme} onChange={e => setTheme(e.target.value)} disabled={!isHost || viewOnly} className="settings-select">
           <option value="general">General</option>
           <option value="countries">Countries</option>
           <option value="animals">Animals</option>
@@ -124,9 +124,9 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
           <option value="colors">Colors</option>
         </select>
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Language: </label>
-        <select value={language} onChange={e => setLanguage(e.target.value)} disabled={!isHost || viewOnly} className="form-select form-select-sm" style={{ width: 120, marginLeft: 8 }}>
+      <div className="settings-row">
+        <label className="settings-label">Language: </label>
+        <select value={language} onChange={e => setLanguage(e.target.value)} disabled={!isHost || viewOnly} className="settings-select">
           <option value="en">English</option>
           <option value="es">Spanish</option>
           <option value="fr">French</option>
@@ -135,11 +135,136 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
         </select>
       </div>
       {!viewOnly && (
-        <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          {onCancel && <button onClick={onCancel} className="btn btn-secondary">Cancel</button>}
-          {isHost && <button onClick={handleSave} className="btn btn-primary">Save</button>}
+        <div className="settings-btn-row">
+          {onCancel && <button onClick={onCancel} className="settings-btn settings-btn-secondary">Cancel</button>}
+          {isHost && <button onClick={handleSave} className="settings-btn settings-btn-primary">Save</button>}
         </div>
       )}
+      <style>{`
+        .settings-panel {
+          background: rgba(34,39,43,0.97);
+          border-radius: 14px;
+          box-shadow: 0 4px 24px #181a1b88, 0 0 12px #a777e322;
+          border: 2px solid #a777e355;
+          padding: 18px 16px 12px 16px;
+          color: #eae6fa;
+          min-width: 300px;
+          max-width: 380px;
+          margin: 0 auto 8px auto;
+        }
+        .settings-title {
+          color: #a777e3;
+          font-size: 1.35rem;
+          font-weight: 800;
+          letter-spacing: 1.2px;
+          margin-bottom: 14px;
+          text-shadow: 0 2px 10px #6e44ff33, 0 0 4px #a777e322;
+        }
+        .settings-row {
+          display: flex;
+          align-items: center;
+          margin-bottom: 10px;
+        }
+        .settings-label {
+          color: #b9a7e3;
+          font-weight: 600;
+          font-size: 0.98rem;
+          min-width: 140px;
+          letter-spacing: 0.3px;
+        }
+        .settings-input {
+          background: #181a1b;
+          color: #fff;
+          border: 2px solid #a777e3;
+          border-radius: 6px;
+          padding: 4px 8px;
+          font-size: 0.98rem;
+          font-weight: 600;
+          width: 60px;
+          margin-left: 8px;
+          height: 30px;
+          transition: border 0.18s, box-shadow 0.18s;
+        }
+        .settings-input:focus {
+          border-color: #6e44ff;
+          box-shadow: 0 0 0 2px #a777e355;
+          outline: none;
+        }
+        .settings-slider-row {
+          gap: 8px;
+        }
+        .settings-slider {
+          accent-color: #6e44ff;
+          width: 90px;
+          margin-right: 6px;
+          height: 3px;
+        }
+        .settings-slider-value {
+          color: #a777e3;
+          font-weight: 700;
+          font-size: 0.95rem;
+          min-width: 32px;
+        }
+        .settings-switch-row {
+          gap: 8px;
+        }
+        .settings-switch {
+          accent-color: #6e44ff;
+          width: 28px;
+          height: 16px;
+        }
+        .settings-select {
+          background: #181a1b;
+          color: #fff;
+          border: 2px solid #a777e3;
+          border-radius: 6px;
+          padding: 4px 8px;
+          font-size: 0.98rem;
+          font-weight: 600;
+          margin-left: 8px;
+          height: 30px;
+          transition: border 0.18s, box-shadow 0.18s;
+        }
+        .settings-select:focus {
+          border-color: #6e44ff;
+          box-shadow: 0 0 0 2px #a777e355;
+          outline: none;
+        }
+        .settings-btn-row {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+          margin-top: 14px;
+        }
+        .settings-btn {
+          background: linear-gradient(90deg, #6e44ff 0%, #a777e3 100%);
+          color: #fff;
+          border: none;
+          border-radius: 6px;
+          font-weight: 700;
+          font-size: 1rem;
+          padding: 6px 18px;
+          box-shadow: 0 2px 8px #a777e344;
+          letter-spacing: 0.7px;
+          transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.12s;
+          cursor: pointer;
+        }
+        .settings-btn-primary:hover, .settings-btn-primary:focus {
+          background: linear-gradient(90deg, #a777e3 0%, #6e44ff 100%);
+          color: #fff;
+          box-shadow: 0 4px 18px #6e44ff44;
+          transform: translateY(-2px) scale(1.03);
+        }
+        .settings-btn-secondary {
+          background: #23272b;
+          color: #a777e3;
+          border: 2px solid #a777e3;
+        }
+        .settings-btn-secondary:hover, .settings-btn-secondary:focus {
+          background: #a777e3;
+          color: #fff;
+        }
+      `}</style>
     </div>
   );
 

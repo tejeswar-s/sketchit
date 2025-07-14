@@ -70,11 +70,7 @@ export default function HomePage() {
   return (
     <div className="container homepage-container position-relative">
       {/* SVG background for HomePage */}
-      <svg className="homepage-bg" width="100%" height="100%" viewBox="0 0 440 420" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="370" cy="60" rx="120" ry="40" fill="#a777e322" />
-        <ellipse cx="80" cy="380" rx="110" ry="30" fill="#6e44ff22" />
-        <ellipse cx="220" cy="250" rx="70" ry="18" fill="#8ec5fc11" />
-      </svg>
+      {/* Removed SVG background image */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
         <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10 }}>
           🎨 SketchIt 🖌️
