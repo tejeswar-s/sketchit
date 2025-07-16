@@ -173,7 +173,11 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
   // Undo last action
   const handleUndo = () => {
     if (localStack.length > 0) {
-      const newStack = localStack.slice(0, -1);
+      // Find the last index of a stroke or fill
+      let idx = localStack.length - 1;
+      while (idx >= 0 && !localStack[idx].type) idx--;
+      if (idx < 0) return; // No stroke/fill found
+      const newStack = localStack.slice(0, idx);
       setLocalStack(newStack);
       if (onDraw) onDraw({ type: 'set', stack: newStack });
     }

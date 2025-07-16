@@ -2,11 +2,8 @@
 import React from 'react';
 
 const DrawerBanner = ({ word }) => {
-  return (
-    <div className="drawer-banner">
-      <p><strong>You are drawing:</strong> {word}</p>
-    </div>
-  );
+  // Remove the banner entirely if not needed, or just render nothing
+  return null;
 };
 
 export default DrawerBanner;

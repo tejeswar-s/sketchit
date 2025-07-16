@@ -37,37 +37,52 @@ export default function LeaderboardPage() {
   }, [socket, navigate]);
 
   return (
-    <div className="container" style={{ maxWidth: 500, margin: '48px auto', background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)', borderRadius: 20, padding: 36, boxShadow: '0 8px 40px #000a', textAlign: 'center', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: -36, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '50%', width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px #0006' }}>
-        <span style={{ fontSize: 40 }}>🏆</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
-        <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10 }}>
-          🎨 SketchIt 🖌️
-        </span>
-      </div>
-      <h2 style={{ marginTop: 48, color: '#fff', letterSpacing: 1 }}>Game Over!</h2>
-      <div style={{ color: '#aaa', fontSize: 18, marginBottom: 18 }}>Final Leaderboard</div>
-      <div style={{ background: '#23272b', borderRadius: 14, padding: 18, boxShadow: '0 2px 12px #0004', marginBottom: 24 }}>
-        <ScoreBoard players={leaderboard || room?.players || []} showBadges />
-      </div>
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 24 }}>
-        <button className="btn btn-primary" onClick={() => {
-          socket.emit('play-again', { code: roomCode, userId: user.userId }, () => {
-            navigate(`/lobby/${roomCode}`);
-          });
-        }}>Play Again</button>
-        <button className="btn btn-danger" onClick={() => {
-          if (user.isHost) {
-            socket.emit('room-closed', { code: roomCode });
-            navigate('/');
-          } else {
-            socket.emit('exit-game', { code: roomCode, userId: user.userId }, () => {
-              navigate('/');
+    <>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 0,
+        backgroundImage: 'url("/hex-tech-bg.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        overflow: 'hidden',
+      }} />
+      <div className="container" style={{ maxWidth: 500, margin: '48px auto', background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)', borderRadius: 20, padding: 36, boxShadow: '0 8px 40px #000a', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <div style={{ position: 'absolute', top: -36, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '50%', width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px #0006' }}>
+          <span style={{ fontSize: 40 }}>🏆</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
+          <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10 }}>
+            🎨 SketchIt 🖌️
+          </span>
+        </div>
+        <h2 style={{ marginTop: 48, color: '#fff', letterSpacing: 1 }}>Game Over!</h2>
+        <div style={{ color: '#aaa', fontSize: 18, marginBottom: 18 }}>Final Leaderboard</div>
+        <div style={{ background: '#23272b', borderRadius: 14, padding: 18, boxShadow: '0 2px 12px #0004', marginBottom: 24 }}>
+          <ScoreBoard players={leaderboard || room?.players || []} showBadges />
+        </div>
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 24 }}>
+          <button className="btn btn-primary" onClick={() => {
+            socket.emit('play-again', { code: roomCode, userId: user.userId }, () => {
+              navigate(`/lobby/${roomCode}`);
             });
-          }
-        }}>Exit Game</button>
+          }}>Play Again</button>
+          <button className="btn btn-danger" onClick={() => {
+            if (user.isHost) {
+              socket.emit('room-closed', { code: roomCode });
+              navigate('/');
+            } else {
+              socket.emit('exit-game', { code: roomCode, userId: user.userId }, () => {
+                navigate('/');
+              });
+            }
+          }}>Exit Game</button>
+        </div>
       </div>
-    </div>
+    </>
   );
 } 

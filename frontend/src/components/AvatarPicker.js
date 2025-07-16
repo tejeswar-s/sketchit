@@ -173,7 +173,15 @@ const AvatarPicker = forwardRef(function AvatarPicker({ selected, onSelect }, re
   const avatar = AVATAR_OPTIONS[index];
 
   return (
-    <div data-avatar-picker style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12, width: 180, justifyContent: 'center' }}>
+    <div data-avatar-picker style={{
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      width: 'auto',
+      justifyContent: 'center',
+      position: 'relative',
+    }}>
       <button 
         aria-label="Previous avatar"
         onClick={handleLeft}
@@ -188,7 +196,7 @@ const AvatarPicker = forwardRef(function AvatarPicker({ selected, onSelect }, re
           padding: 0,
           width: 36,
           height: 36,
-          borderRadius: '50%', // Make button round
+          borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -197,7 +205,6 @@ const AvatarPicker = forwardRef(function AvatarPicker({ selected, onSelect }, re
         onMouseEnter={e => (e.target.style.color = '#a777e3')}
         onMouseLeave={e => (e.target.style.color = '#6e44ff')}
       >
-        {/* Modern left arrow SVG */}
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="11" cy="11" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
           <path d="M13.5 7L9.5 11L13.5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -205,18 +212,19 @@ const AvatarPicker = forwardRef(function AvatarPicker({ selected, onSelect }, re
       </button>
       <div
         style={{
-          width: 120, 
-          height: 120, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+          width: 88,
+          height: 88,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          borderRadius: '50%', // Make avatar container a perfect circle
+          borderRadius: '50%',
           border: '3px solid #6e44ff',
-          fontSize: 64,
+          fontSize: 56,
           boxShadow: '0 2px 12px #6e44ff22',
           position: 'relative',
           overflow: 'hidden',
+          aspectRatio: '1 / 1',
         }}
       >
         {avatar.emoji}
@@ -235,7 +243,7 @@ const AvatarPicker = forwardRef(function AvatarPicker({ selected, onSelect }, re
           padding: 0,
           width: 36,
           height: 36,
-          borderRadius: '50%', // Make button round
+          borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -244,12 +252,28 @@ const AvatarPicker = forwardRef(function AvatarPicker({ selected, onSelect }, re
         onMouseEnter={e => (e.target.style.color = '#a777e3')}
         onMouseLeave={e => (e.target.style.color = '#6e44ff')}
       >
-        {/* Modern right arrow SVG */}
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="11" cy="11" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
           <path d="M8.5 7L12.5 11L8.5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
+      <style>{`
+        @media (max-width: 600px) {
+          [data-avatar-picker] {
+            gap: 4px !important;
+          }
+          [data-avatar-picker] > button {
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 20px !important;
+          }
+          [data-avatar-picker] > div {
+            width: 56px !important;
+            height: 56px !important;
+            font-size: 32px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 });

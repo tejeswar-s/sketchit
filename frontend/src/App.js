@@ -17,7 +17,7 @@ function App() {
       <GameProvider>
         <UIProvider>
           <Router>
-            <div className="app-dark-bg" style={{ height: '100vh', overflowY: 'auto', background: '#181a1b', color: '#fff' }}>
+            <div className="app-dark-bg" style={{ height: '100vh', overflowY: 'auto', color: '#fff' }}>
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/join/:roomCode" element={<JoinPage />} />

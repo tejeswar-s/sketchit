@@ -6,13 +6,14 @@ import { useGame } from '../contexts/GameContext';
 import { useSocket } from '../contexts/SocketContext';
 import useSocketEvents from '../hooks/useSocketEvents';
 import { shareRoom } from '../utils/shareUtils';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function LobbyPage() {
   const { roomCode } = useParams();
   const navigate = useNavigate();
   const { user, room, setRoom, gameState, setGameState } = useGame();
   const socket = useSocket();
-  const [showSettingsSaved, setShowSettingsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -38,8 +39,7 @@ export default function LobbyPage() {
     socket.emit('room:updateSettings', { code: room.code, settings }, (updatedRoom) => {
       if (updatedRoom) {
         setRoom(updatedRoom);
-        setShowSettingsSaved(true);
-        setTimeout(() => setShowSettingsSaved(false), 2000);
+        toast.success('Settings updated!');
       }
     });
   };
@@ -63,8 +63,18 @@ export default function LobbyPage() {
 
   return (
     <div className="lobby-bg min-vh-100 d-flex flex-column justify-content-center align-items-center position-relative" style={{ background: 'linear-gradient(135deg, #181a1b 0%, #23272b 100%)', fontFamily: 'Inter, Segoe UI, Arial, sans-serif', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
-        <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{
+        width: '100%',
+        minHeight: 80,
+        background: 'linear-gradient(90deg, #a777e3 0%, #6e44ff 100%)',
+        borderRadius: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+        marginTop: 4
+      }}>
+        <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: 2, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
           🎨 SketchIt 🖌️
         </span>
       </div>
@@ -147,17 +157,13 @@ export default function LobbyPage() {
                 {/* Right: Settings */}
                 <div className="col-lg-7 d-flex flex-column align-items-center align-items-lg-stretch">
                   <SettingsPanel settings={room.settings} onSave={handleSettingsChange} isHost={isHost} />
-                  {showSettingsSaved && (
-                    <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'rgba(34,39,43,0.97)', color: '#a777e3', padding: '16px 32px', borderRadius: 14, boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33', zIndex: 9999, fontWeight: 600, fontSize: 18, letterSpacing: 1, backdropFilter: 'blur(8px) saturate(120%)', border: '1.5px solid #23272b', textShadow: '0 0 8px #a777e344' }}>
-                      <span style={{ color: '#a777e3', fontWeight: 700 }}>✔</span> Settings updated
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <ToastContainer position="top-center" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <style>{`
         .glass-card-dark {
           background: rgba(34,39,43,0.92);
@@ -181,6 +187,29 @@ export default function LobbyPage() {
         @media (max-width: 600px) {
           .glass-card-dark { padding: 1.5rem !important; }
           .room-code-box { font-size: 18px !important; padding: 6px 8px !important; }
+        }
+        @media (max-width: 480px) {
+          .glass-card-dark { padding: 0.7rem !important; }
+          .room-code-box { font-size: 14px !important; padding: 4px 4px !important; }
+          .lobby-bg > div > span, .lobby-bg .homepage-title, .lobby-bg span[style*='font-size: 44'] {
+            font-size: 1.2rem !important;
+            letter-spacing: 1px !important;
+          }
+          .room-code-box button, .btn, .button-49, .button-89 {
+            font-size: 0.9rem !important;
+            padding: 4px 8px !important;
+            min-width: 60px !important;
+          }
+          .fw-bold, h2, h5, label, .lobby-settings-label {
+            font-size: 1rem !important;
+          }
+          .lobby-settings-section, .glass-card-dark {
+            padding: 0.5rem !important;
+          }
+          input, select, textarea, .lobby-settings-input {
+            font-size: 0.95rem !important;
+            padding: 6px 8px !important;
+          }
         }
       `}</style>
     </div>
