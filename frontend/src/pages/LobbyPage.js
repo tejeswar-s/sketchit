@@ -78,7 +78,7 @@ export default function LobbyPage() {
           🎨 SketchIt 🖌️
         </span>
       </div>
-      <div className="container py-5" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="container" style={{ position: 'relative', zIndex: 1 }}>
         <div className="row justify-content-center">
           <div className="col-lg-10 col-xl-9">
             <div className="glass-card-dark p-4 p-md-5 shadow-lg rounded-4 animate__animated animate__fadeInDown position-relative" style={{ overflow: 'hidden' }}>
@@ -90,35 +90,14 @@ export default function LobbyPage() {
               </svg>
               {/* Room code box */}
               <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4 gap-3" style={{ position: 'relative', zIndex: 1 }}>
-                <div className="text-center text-md-start d-flex align-items-center gap-3">
-                  <h2 className="fw-bold mb-1" style={{ letterSpacing: 2, color: '#a777e3', textShadow: '0 2px 16px #6e44ff55, 0 0 8px #a777e344', marginBottom: 0 }}>Lobby</h2>
-                  {isHost && room.players.length < 2 && (
-                    <div style={{
-                      background: 'rgba(255,77,79,0.13)',
-                      color: '#ff4d4f',
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      padding: '6px 14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      fontSize: 15,
-                      boxShadow: '0 2px 8px #ff4d4f22',
-                      border: '1.5px solid #ff4d4f55',
-                      letterSpacing: 1,
-                      marginLeft: 12,
-                      marginBottom: 0,
-                      height: 36,
-                    }}>
-                      <span style={{ fontSize: 18, marginRight: 4 }}>⚠️</span>
-                      2+ players required
-                    </div>
-                  )}
+                {/* For small screens, use a horizontal row for Lobby, room code, Copy, Share */}
+                <div className="lobby-header-row d-flex align-items-center justify-content-center" style={{ width: '100%', gap: 8, marginBottom: 0, justifyContent: 'center' }}>
+                  <h2 className="fw-bold mb-1" style={{ letterSpacing: 2, color: '#a777e3', textShadow: '0 2px 16px #6e44ff55, 0 0 8px #a777e344', marginBottom: 0, fontSize: '1.5rem', minWidth: 70, textAlign: 'center' }}>Lobby</h2>
+                  <div className="room-code-box d-flex align-items-center gap-2 px-2 py-1 rounded-3" style={{ background: 'rgba(167,119,227,0.10)', border: '1.5px solid #a777e3', color: '#a777e3', fontWeight: 700, fontSize: 18, letterSpacing: 2, boxShadow: '0 2px 8px #a777e322', userSelect: 'all', minWidth: 0 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 18 }}>{room.code}</span>
+                    <button onClick={handleCopy} className="btn btn-sm btn-primary ms-1" style={{ fontWeight: 700, fontSize: 13, borderRadius: 6, padding: '2px 8px', boxShadow: '0 2px 4px #a777e322', border: 'none', background: '#6e44ff', color: '#fff', minWidth: 0 }}>{copied ? 'Copied!' : 'Copy'}</button>
+                    <button onClick={handleShare} className="btn btn-sm btn-success ms-1" style={{ fontWeight: 700, fontSize: 13, borderRadius: 6, padding: '2px 8px', boxShadow: '0 2px 4px #28a74522', border: 'none', background: '#28a745', color: '#fff', minWidth: 0 }}>{shared ? 'Shared!' : 'Share'}</button>
                 </div>
-                <div className="room-code-box d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-3" style={{ background: 'rgba(167,119,227,0.10)', border: '1.5px solid #a777e3', color: '#a777e3', fontWeight: 700, fontSize: 28, letterSpacing: 2, boxShadow: '0 2px 8px #a777e322', userSelect: 'all' }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 28 }}>{room.code}</span>
-                  <button onClick={handleCopy} className="btn btn-sm btn-primary ms-2" style={{ fontWeight: 700, fontSize: 18, borderRadius: 8, padding: '4px 14px', boxShadow: '0 2px 4px #a777e322', border: 'none', background: '#6e44ff', color: '#fff' }}>{copied ? 'Copied!' : 'Copy'}</button>
-                  <button onClick={handleShare} className="btn btn-sm btn-success ms-2" style={{ fontWeight: 700, fontSize: 18, borderRadius: 8, padding: '4px 14px', boxShadow: '0 2px 4px #28a74522', border: 'none', background: '#28a745', color: '#fff' }}>{shared ? 'Shared!' : 'Share'}</button>
                 </div>
               </div>
               <hr style={{ borderColor: '#a777e344', margin: '24px 0 18px 0', position: 'relative', zIndex: 1 }} />
@@ -131,7 +110,6 @@ export default function LobbyPage() {
                     hostId={room.players.find(p => p.isHost)?.userId}
                     drawerId={gameState?.drawingPlayerId}
                     myUserId={user.userId}
-                    onMute={() => {}}
                     onKick={() => {}}
                   />
                   {isHost && (
@@ -143,13 +121,6 @@ export default function LobbyPage() {
                         style={{ fontWeight: 800, fontSize: 20, borderRadius: 10, outline: 'none', cursor: canStart ? 'pointer' : 'not-allowed', opacity: canStart ? 1 : 0.7, position: 'relative', overflow: 'hidden', letterSpacing: 2 }}
                       >
                         Start Game
-                      </button>
-                      <button
-                        onClick={handleCloseRoom}
-                        className="button-89"
-                        style={{ fontWeight: 700, borderRadius: 10 }}
-                      >
-                        Close Room
                       </button>
                     </div>
                   )}
@@ -185,31 +156,200 @@ export default function LobbyPage() {
           .room-code-box { font-size: 22px !important; padding: 8px 12px !important; }
         }
         @media (max-width: 600px) {
-          .glass-card-dark { padding: 1.5rem !important; }
-          .room-code-box { font-size: 18px !important; padding: 6px 8px !important; }
-        }
-        @media (max-width: 480px) {
-          .glass-card-dark { padding: 0.7rem !important; }
-          .room-code-box { font-size: 14px !important; padding: 4px 4px !important; }
-          .lobby-bg > div > span, .lobby-bg .homepage-title, .lobby-bg span[style*='font-size: 44'] {
-            font-size: 1.2rem !important;
-            letter-spacing: 1px !important;
+          .lobby-header-row {
+            flex-direction: row !important;
+            gap: 8px !important;
+            width: 100% !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 0 !important;
+          }
+          .room-code-box {
+            flex-direction: row !important;
+            gap: 4px !important;
+            padding: 2px 4px !important;
+            font-size: 13px !important;
+            min-width: 0 !important;
+          }
+          .room-code-box button {
+            font-size: 0.8rem !important;
+            padding: 2px 7px !important;
+            min-width: 0 !important;
+            border-radius: 6px !important;
+          }
+          .room-code-box span[style*='font-size: 18'] {
+            font-size: 13px !important;
+          }
+          .fw-bold, h2 {
+            font-size: 1.3rem !important;
+            min-width: 60px !important;
+            margin-bottom: 0 !important;
+            text-align: center !important;
+          }
+          .glass-card-dark {
+            padding: 0.7rem !important;
+          }
+          .room-code-box {
+            font-size: 13px !important;
+            padding: 3px 4px !important;
+            gap: 4px !important;
           }
           .room-code-box button, .btn, .button-49, .button-89 {
-            font-size: 0.9rem !important;
-            padding: 4px 8px !important;
-            min-width: 60px !important;
+            font-size: 0.8rem !important;
+            padding: 3px 7px !important;
+            min-width: 44px !important;
+            border-radius: 6px !important;
+          }
+          .room-code-box span[style*='font-size: 28'] {
+            font-size: 18px !important;
           }
           .fw-bold, h2, h5, label, .lobby-settings-label {
             font-size: 1rem !important;
+            letter-spacing: 0.5px !important;
           }
-          .lobby-settings-section, .glass-card-dark {
-            padding: 0.5rem !important;
+          .settings-panel {
+            min-width: 160px !important;
+            max-width: 98vw !important;
+            padding: 0.5rem 0.4rem 0.4rem 0.4rem !important;
           }
-          input, select, textarea, .lobby-settings-input {
-            font-size: 0.95rem !important;
-            padding: 6px 8px !important;
+          .settings-title {
+            font-size: 1.05rem !important;
+            margin-bottom: 8px !important;
           }
+          .settings-row {
+            margin-bottom: 5px !important;
+          }
+          .settings-label {
+            font-size: 0.85rem !important;
+            min-width: 80px !important;
+          }
+          .settings-input, .settings-select {
+            font-size: 0.85rem !important;
+            padding: 2px 4px !important;
+            height: 22px !important;
+            width: 38px !important;
+            margin-left: 4px !important;
+            border-radius: 4px !important;
+          }
+          .settings-slider {
+            width: 50px !important;
+            height: 2px !important;
+          }
+          .settings-btn {
+            font-size: 0.85rem !important;
+            padding: 3px 8px !important;
+            border-radius: 6px !important;
+          }
+          .player-list-container {
+            padding: 6px !important;
+            min-width: 120px !important;
+          }
+          .player-list-container h4 {
+            font-size: 1rem !important;
+          }
+          .player-list-container span {
+            font-size: 0.9rem !important;
+          }
+          .button-row-center {
+            flex-direction: column !important;
+            gap: 8px !important;
+            width: 100% !important;
+            align-items: stretch !important;
+            margin-top: 8px !important;
+          }
+          .button-49, .button-89 {
+            width: 100% !important;
+            min-width: 0 !important;
+            font-size: 1.1rem !important;
+            padding: 12px 0 !important;
+            border-radius: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 54px !important;
+            box-sizing: border-box !important;
+          }
+          .button-49 span, .button-89 span, .button-49, .button-89 {
+            vertical-align: middle !important;
+            line-height: 1.2 !important;
+          }
+          .player-list-container {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 320px !important;
+            margin: 0 auto 8px auto !important;
+            box-sizing: border-box !important;
+          }
+          .button-row-center {
+            flex-direction: column !important;
+            gap: 8px !important;
+            width: 100% !important;
+            align-items: stretch !important;
+            margin-top: 8px !important;
+            max-width: 320px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
+          .button-49, .button-89 {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 320px !important;
+            font-size: 1.1rem !important;
+            padding: 12px 0 !important;
+            border-radius: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 54px !important;
+            box-sizing: border-box !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
+        }
+        @media (min-width: 901px) {
+          .lobby-header-row {
+            gap: 18px !important;
+            width: 100% !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 0 !important;
+          }
+          .fw-bold, h2 {
+            font-size: 2.3rem !important;
+            min-width: 120px !important;
+            margin-bottom: 0 !important;
+            text-align: center !important;
+            letter-spacing: 2px !important;
+          }
+          .room-code-box {
+            font-size: 2rem !important;
+            padding: 10px 22px !important;
+            gap: 14px !important;
+            min-width: 0 !important;
+            border-width: 2.5px !important;
+          }
+          .room-code-box button {
+            font-size: 1.2rem !important;
+            padding: 7px 18px !important;
+            min-width: 64px !important;
+            border-radius: 10px !important;
+          }
+          .room-code-box span[style*='font-size: 18'] {
+            font-size: 2rem !important;
+          }
+        }
+        /* Reduce vertical gaps between SketchIt heading, Lobby, and Game Settings */
+        .lobby-header-row {
+          margin-top: 2px !important;
+          margin-bottom: 2px !important;
+        }
+        hr {
+          margin: 4px 0 4px 0 !important;
+        }
+        .settings-panel {
+          margin-top: 2px !important;
+        }
+        @media (max-width: 400px) {
         }
       `}</style>
     </div>

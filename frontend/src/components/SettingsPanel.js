@@ -74,65 +74,70 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
   const content = (
     <div className="settings-panel">
       <h4 className="settings-title">Game Settings</h4>
-      <div className="settings-row">
-        <label className="settings-label">Round Time (sec): </label>
-        <input type="number" value={roundTime} min={30} max={180} onChange={e => setRoundTime(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
-      </div>
-      <div className="settings-row">
-        <label className="settings-label">Max Rounds: </label>
-        <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
-      </div>
-      <div className="settings-row">
-        <label className="settings-label">Number of Hints: </label>
-        <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} className="settings-input" disabled={!isHost || viewOnly} />
-      </div>
-      {Array.from({ length: hintCount }).map((_, idx) => (
-        <div key={idx} className="settings-row settings-slider-row">
-          <label className="settings-label">Hint {idx + 1} timing:</label>
-          <input type="range" min={5} max={95} step={1} value={hintIntervals[idx] || 0} onChange={e => handleHintIntervalChange(idx, Number(e.target.value))} disabled={!isHost || viewOnly} className="settings-slider" />
-          <span className="settings-slider-value">{hintIntervals[idx] || 0}%</span>
+      {/* First row: Round Time, Max Rounds */}
+      <div className="settings-row settings-row-compact">
+        <div className="settings-col">
+          <label className="settings-label">Round Time (sec): </label>
+          <input type="number" value={roundTime} min={30} max={180} onChange={e => setRoundTime(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
         </div>
-      ))}
-      <div className="settings-row">
-        <label className="settings-label">Word Count (choices for drawer): </label>
-        <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
+        <div className="settings-col">
+          <label className="settings-label">Max Rounds: </label>
+          <input type="number" value={maxRounds} min={1} max={10} onChange={e => setMaxRounds(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
+        </div>
       </div>
-      <div className="settings-row settings-switch-row">
-        <input className="settings-switch" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost || viewOnly} />
-        <label className="settings-label" htmlFor="allowUndo">Allow Drawing Undo</label>
+      {/* Second row: Number of Hints, Word Count */}
+      <div className="settings-row settings-row-compact">
+        <div className="settings-col">
+          <label className="settings-label">Number of Hints: </label>
+          <input type="number" min={1} max={5} value={hintCount} onChange={e => handleHintCountChange(Number(e.target.value))} className="settings-input" disabled={!isHost || viewOnly} />
+        </div>
+        <div className="settings-col">
+          <label className="settings-label">Word Count: </label>
+          <input type="number" value={wordCount} min={2} max={6} onChange={e => setWordCount(e.target.value)} className="settings-input" disabled={!isHost || viewOnly} />
+        </div>
       </div>
-      <div className="settings-row settings-switch-row">
-        <input className="settings-switch" type="checkbox" id="allowChat" checked={allowChat} onChange={e => setAllowChat(e.target.checked)} disabled={!isHost || viewOnly} />
-        <label className="settings-label" htmlFor="allowChat">Allow Chat</label>
+      {/* Third row: Checkboxes */}
+      <div className="settings-row settings-row-compact settings-row-checkboxes">
+        <div className="settings-col settings-checkbox-col">
+          <input className="settings-switch settings-switch-compact" type="checkbox" id="allowUndo" checked={allowUndo} onChange={e => setAllowUndo(e.target.checked)} disabled={!isHost || viewOnly} />
+          <label className="settings-label settings-label-compact" htmlFor="allowUndo">Allow Undo</label>
+        </div>
+        <div className="settings-col settings-checkbox-col">
+          <input className="settings-switch settings-switch-compact" type="checkbox" id="allowChat" checked={allowChat} onChange={e => setAllowChat(e.target.checked)} disabled={!isHost || viewOnly} />
+          <label className="settings-label settings-label-compact" htmlFor="allowChat">Allow Chat</label>
+        </div>
+        <div className="settings-col settings-checkbox-col">
+          <input className="settings-switch settings-switch-compact" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost || viewOnly} />
+          <label className="settings-label settings-label-compact" htmlFor="showTimerBar">Show Timer</label>
+        </div>
       </div>
-      <div className="settings-row settings-switch-row">
-        <input className="settings-switch" type="checkbox" id="showTimerBar" checked={showTimerBar} onChange={e => setShowTimerBar(e.target.checked)} disabled={!isHost || viewOnly} />
-        <label className="settings-label" htmlFor="showTimerBar">Show Timer Bar</label>
-      </div>
-      <div className="settings-row">
-        <label className="settings-label">Game Theme: </label>
-        <select value={theme} onChange={e => setTheme(e.target.value)} disabled={!isHost || viewOnly} className="settings-select">
-          <option value="general">General</option>
-          <option value="countries">Countries</option>
-          <option value="animals">Animals</option>
-          <option value="trees">Trees</option>
-          <option value="fruits">Fruits</option>
-          <option value="food">Food</option>
-          <option value="sports">Sports</option>
-          <option value="vehicles">Vehicles</option>
-          <option value="jobs">Jobs</option>
-          <option value="colors">Colors</option>
-        </select>
-      </div>
-      <div className="settings-row">
-        <label className="settings-label">Language: </label>
-        <select value={language} onChange={e => setLanguage(e.target.value)} disabled={!isHost || viewOnly} className="settings-select">
-          <option value="en">English</option>
-          <option value="es">Spanish</option>
-          <option value="fr">French</option>
-          <option value="de">German</option>
-          <option value="it">Italian</option>
-        </select>
+      {/* Fourth row: Game Theme, Language */}
+      <div className="settings-row settings-row-compact">
+        <div className="settings-col">
+          <label className="settings-label">Game Theme: </label>
+          <select value={theme} onChange={e => setTheme(e.target.value)} disabled={!isHost || viewOnly} className="settings-select">
+            <option value="general">General</option>
+            <option value="countries">Countries</option>
+            <option value="animals">Animals</option>
+            <option value="trees">Trees</option>
+            <option value="fruits">Fruits</option>
+            <option value="food">Food</option>
+            <option value="sports">Sports</option>
+            <option value="vehicles">Vehicles</option>
+            <option value="jobs">Jobs</option>
+            <option value="colors">Colors</option>
+          </select>
+        </div>
+        <div className="settings-col">
+          <label className="settings-label">Language: </label>
+          <select value={language} onChange={e => setLanguage(e.target.value)} disabled={!isHost || viewOnly} className="settings-select">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+          </select>
+        </div>
       </div>
       {!viewOnly && (
         <div className="settings-btn-row">
@@ -165,12 +170,30 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
           align-items: center;
           margin-bottom: 10px;
         }
+        .settings-row-compact {
+          display: flex;
+          flex-direction: row;
+          gap: 10px;
+          justify-content: center;
+          align-items: flex-end;
+          margin-bottom: 10px;
+        }
+        .settings-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 0;
+          flex: 1 1 0;
+          padding: 0 2px;
+        }
         .settings-label {
           color: #b9a7e3;
           font-weight: 600;
           font-size: 0.98rem;
           min-width: 140px;
           letter-spacing: 0.3px;
+          margin-bottom: 2px;
+          text-align: center;
         }
         .settings-input {
           background: #181a1b;
@@ -184,6 +207,7 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
           margin-left: 8px;
           height: 30px;
           transition: border 0.18s, box-shadow 0.18s;
+          text-align: center;
         }
         .settings-input:focus {
           border-color: #6e44ff;
@@ -263,6 +287,91 @@ export default function SettingsPanel({ settings, onSave, onCancel, isHost, show
         .settings-btn-secondary:hover, .settings-btn-secondary:focus {
           background: #a777e3;
           color: #fff;
+        }
+        @media (max-width: 600px) {
+          .settings-row-compact {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6px !important;
+            justify-content: center !important;
+            align-items: flex-end !important;
+            margin-bottom: 8px !important;
+          }
+          .settings-col {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+            padding: 0 2px !important;
+            max-width: 50vw !important;
+          }
+          .settings-label {
+            font-size: 0.85rem !important;
+            margin-bottom: 2px !important;
+            text-align: center !important;
+            min-width: 0 !important;
+          }
+          .settings-input, .settings-select {
+            font-size: 0.95rem !important;
+            padding: 2px 4px !important;
+            height: 22px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 60px !important;
+            text-align: center !important;
+            border-radius: 4px !important;
+          }
+          .settings-row-checkboxes {
+            align-items: center !important;
+            margin-bottom: 8px !important;
+          }
+          .settings-checkbox-col {
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 2px !important;
+            max-width: 33vw !important;
+          }
+          .settings-switch-compact {
+            width: 16px !important;
+            height: 16px !important;
+            min-width: 16px !important;
+            min-height: 16px !important;
+            margin-right: 2px !important;
+          }
+          .settings-label-compact {
+            font-size: 0.75rem !important;
+            margin-bottom: 0 !important;
+            min-width: 0 !important;
+          }
+          .settings-label {
+            font-size: 0.85rem !important;
+            margin-bottom: 2px !important;
+          }
+          .settings-row-compact {
+            gap: 8px !important;
+          }
+          .settings-input[type='number'] {
+            width: 70px !important;
+            font-size: 0.95rem !important;
+            padding: 2px 4px !important;
+            height: 28px !important;
+          }
+          .settings-select {
+            width: 190px !important;
+            height: 44px !important;
+            font-size: 1.08rem !important;
+            padding: 6px 12px !important;
+          }
+          .settings-checkbox {
+            transform: scale(0.85);
+            margin-right: 4px;
+          }
+          .settings-checkbox-label {
+            font-size: 0.8rem !important;
+            margin-right: 8px;
+          }
         }
       `}</style>
     </div>

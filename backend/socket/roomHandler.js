@@ -179,14 +179,11 @@ async function handlePlayerLeave(io, code, userId) {
   }
 
   if (room.players.length === 1) {
-    // Only one player left: pause/end the game and notify the last player
-    room.status = 'waiting';
-    if (room.gameState) {
-      room.gameState.phase = 'waiting-for-players';
-    }
-    await room.save();
-    io.to(code).emit('room:update', room);
-    io.to(room.players[0].socketId).emit('waiting-for-players', { message: 'All other players have left. Waiting for others to join or exit.' });
+    // Only one player left: close and delete the room immediately
+    const lastSocketId = room.players[0].socketId;
+    io.to(code).emit('room-closed');
+    await RoomModel.deleteOne({ code });
+    if (lastSocketId) io.sockets.sockets.get(lastSocketId)?.leave(code);
     return;
   }
 

@@ -580,7 +580,6 @@ textarea:focus,
     -webkit-user-select: none;
     touch-action: manipulation;
     border-radius: 10px;
-    width: 150px;
     height: 56px;
     text-align: center;
     font-weight: 700;

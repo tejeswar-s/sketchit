@@ -266,7 +266,7 @@ export default function HomePage() {
             disabled={loading || !name.trim()}
             className={`btn btn-primary homepage-btn shine-effect${shineOutCreate ? ' out' : ''}`}
             data-mdb-ripple-init={(!loading && name.trim()) ? true : undefined}
-            style={{ fontWeight: 700, fontSize: 18, borderRadius: 20, boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33', letterSpacing: 1, height: 44, width: '100%', maxWidth: 320, margin: '4px 0 0 0', display: 'block' }}
+            style={{ fontWeight: 700, fontSize: 18, borderRadius: 20, boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33', letterSpacing: 1, height: 44, width: '100%', maxWidth: 320, margin: '4px 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
             onMouseOut={() => setShineOutCreate(true)}
             onAnimationEnd={() => setShineOutCreate(false)}
           >
@@ -372,7 +372,7 @@ export default function HomePage() {
           disabled={loading || !name.trim() || !roomCode.trim()}
           className={`btn btn-success homepage-btn shine-effect${shineOutJoin ? ' out' : ''}`}
           data-mdb-ripple-init={(!loading && name.trim() && roomCode.trim()) ? true : undefined}
-          style={{ fontWeight: 700, fontSize: 18, borderRadius: 20, boxShadow: '0 2px 12px #6e44ff44, 0 0 4px #8ec5fc33', letterSpacing: 1, width: '100%', maxWidth: 320, height: 44, margin: '4px 0 0 0', display: 'block' }}
+          style={{ fontWeight: 700, fontSize: 18, borderRadius: 20, boxShadow: '0 2px 12px #6e44ff44, 0 0 4px #8ec5fc33', letterSpacing: 1, width: '100%', maxWidth: 320, height: 44, margin: '4px 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
           onMouseOut={() => setShineOutJoin(true)}
           onAnimationEnd={() => setShineOutJoin(false)}
         >
@@ -385,123 +385,58 @@ export default function HomePage() {
 .homepage-container {
   border-radius: 28px !important;
 }
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   .homepage-container {
-    padding: 14px 6px 12px 6px !important;
-    width: 98vw !important;
-    max-width: 420px !important;
-    min-width: 0 !important;
-    margin: 4vh auto !important;
+    max-width: 400px !important;
+    width: 100% !important;
+    padding: 18px 8px 12px 8px !important;
+    border-radius: 18px !important;
+    margin: 6vh auto !important;
   }
   .homepage-title {
-    font-size: 2rem !important;
-    white-space: nowrap !important;
-  }
-  .homepage-container label {
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto 2px auto;
-    display: block;
-    text-align: left;
-    padding-left: 2px;
-  }
-  .homepage-container input,
-  .homepage-container .homepage-btn {
-    width: 100%;
-    max-width: 320px;
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-    box-sizing: border-box;
+    font-size: clamp(22px, 7vw, 32px) !important;
+    padding: 0 2vw !important;
   }
   .homepage-flex-row {
     flex-direction: column !important;
-    align-items: center !important;
     gap: 12px !important;
-    width: 100% !important;
+    align-items: stretch !important;
   }
-  .homepage-flex-left,
-  .homepage-flex-right {
+  .homepage-flex-left, .homepage-flex-right {
+    align-items: center !important;
     width: 100% !important;
     min-width: 0 !important;
     padding: 0 !important;
-    margin: 0 !important;
-    height: auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
   }
-  .homepage-flex-right {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+  .homepage-btn, .btn, input[type="text"] {
+    font-size: clamp(15px, 4vw, 18px) !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    border-radius: 14px !important;
+    margin: 4px 0 !important;
+    box-sizing: border-box !important;
+  }
+  .avatar-picker {
+    margin: 0 auto !important;
+    transform: scale(0.85);
+  }
+  label {
+    font-size: clamp(13px, 3vw, 16px) !important;
+    margin-bottom: 2px !important;
   }
 }
-@media (max-width: 400px) {
+@media (min-width: 901px) {
   .homepage-container {
-    padding: 8px 2px 8px 2px !important;
-    border-radius: 28px !important;
-    width: 99vw !important;
-    max-width: 99vw !important;
-  }
-}
-@media (max-width: 600px) {
-  .homepage-title {
-    font-size: 2rem !important;
-    white-space: nowrap !important;
-  }
-  .homepage-container [aria-label="Randomize avatar"] {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 28px !important;
-    min-height: 28px !important;
-    max-width: 36px !important;
-    max-height: 36px !important;
-    font-size: 18px !important;
-    top: 0 !important;
-    right: 0 !important;
-  }
-  .homepage-container .homepage-flex-row {
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 12px !important;
+    max-width: 400px !important;
     width: 100% !important;
+    margin: 6vh auto !important;
   }
-  .homepage-container .homepage-flex-left,
-  .homepage-container .homepage-flex-right {
+  .homepage-btn, .btn, input[type="text"] {
+    max-width: 400px !important;
     width: 100% !important;
-    min-width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    height: auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-  .homepage-container .homepage-flex-right {
-    margin-right: 0 !important;
-  }
-  .homepage-container .homepage-btn {
-    width: 100% !important;
-    max-width: 320px !important;
-    min-width: 180px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    display: block !important;
-  }
-}
-.homepage-btn, .homepage-container input {
-  border-radius: 20px !important;
-}
-.homepage-container input::placeholder {
-  padding-left: 8px !important;
-  color: #bbaaff !important;
-  opacity: 1;
-}
-@media (max-width: 520px) {
-  .homepage-container {
-    padding: 8px 2px 8px 2px !important;
+    box-sizing: border-box !important;
   }
 }
 `}</style>

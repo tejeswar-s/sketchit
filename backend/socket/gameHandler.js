@@ -98,14 +98,13 @@ module.exports = function gameHandler(io, socket) {
     const room = await Room.findOne({ code });
     if (!room) return callback && callback({ error: 'Room not found' });
     room.players.forEach(p => { p.score = 0; });
-    room.status = 'in-progress';
+    room.status = 'waiting';
     room.currentRound = 1;
     room.drawerIndex = 0;
-    // Shuffle player order for new game
-    room.playerOrder = shuffleArray(room.players.map(p => p.userId));
+    // Do NOT start the game or call startRound here
     await room.save();
-    startRound(io, code);
-    io.to(code).emit('game:reset');
+    io.to(code).emit('room:update', room);
+    io.to(code).emit('room:replay');
     callback && callback({ success: true });
   });
 

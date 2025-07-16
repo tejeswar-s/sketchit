@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import { useSocket } from '../contexts/SocketContext';
 
-export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, disabled, color, width, tool, isEraser, setColor, setWidth, setTool, setIsEraser, onUndo, onRedo, renderControls }) {
+export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, tempStroke = [], disabled, color, width, tool, isEraser, setColor, setWidth, setTool, setIsEraser, onUndo, onRedo, renderControls }) {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [lastPos, setLastPos] = useState(null);
-  const [currentStroke, setCurrentStroke] = useState([]); // Track segments in current stroke
+  // Remove: const [currentStroke, setCurrentStroke] = useState([]);
   const [localStack, setLocalStack] = useState([]);
   // No redo stack needed
   const [canvasSize, setCanvasSize] = useState({ width: 480, height: 400 });
@@ -64,9 +64,9 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
         ctx.stroke();
       }
     });
-    // Draw currentStroke in real time
-    if (currentStroke && currentStroke.length > 0) {
-      currentStroke.forEach(line => {
+    // Draw tempStroke in real time
+    if (tempStroke && tempStroke.length > 0) {
+      tempStroke.forEach(line => {
         ctx.strokeStyle = line.color || '#fff';
         ctx.lineWidth = line.width || 3;
         ctx.beginPath();
@@ -75,7 +75,7 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
         ctx.stroke();
       });
     }
-  }, [drawingData, canvasSize, currentStroke]);
+  }, [drawingData, canvasSize, tempStroke]);
 
   // Sync local stack with drawing data
   useEffect(() => {
@@ -104,11 +104,12 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
     return { x: x * scaleX, y: y * scaleY };
   };
 
+  // Update pointer handlers to use onDraw and onStrokeEnd, but do not manage currentStroke locally
   const handlePointerDown = (e) => {
     if (disabled) return;
     setDrawing(true);
     setLastPos(getRelativePos(e));
-    setCurrentStroke([]); // Start a new stroke
+    // No need to reset currentStroke
   };
   const handlePointerMove = (e) => {
     if (!drawing || disabled) return;
@@ -117,21 +118,22 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
       const line = { from: lastPos, to: pos, color: isEraser ? '#111' : color, width };
       onDraw && onDraw(line); // Real-time drawing
       setLastPos(pos);
-      setCurrentStroke(stroke => [...stroke, line]);
+      // No need to update currentStroke
     }
   };
   const handlePointerUp = () => {
     setDrawing(false);
     setLastPos(null);
-    if (currentStroke.length > 0) {
+    if (tempStroke.length > 0) {
       // Notify parent of completed stroke for undo/redo
-      onStrokeEnd && onStrokeEnd({ type: 'stroke', lines: currentStroke });
-      setCurrentStroke([]);
+      onStrokeEnd && onStrokeEnd({ type: 'stroke', lines: tempStroke });
+      // No need to clear currentStroke
     }
   };
 
   // Flood fill algorithm for fill bucket
   const floodFill = (ctx, x, y, fillColor) => {
+    if (!canvasRef.current || canvasRef.current.width === 0 || canvasRef.current.height === 0) return;
     const imageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
     const data = imageData.data;
     const width = imageData.width;
@@ -201,7 +203,7 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
         ref={canvasRef}
         width={canvasSize.width}
         height={canvasSize.height}
-        style={{ background: '#111', borderRadius: 12, border: '2px solid #444', touchAction: 'none', display: 'block', margin: '0 auto', width: '100%', maxWidth: 700, height: 'auto' }}
+        style={{ background: '#111', borderRadius: 12, border: '2px solid #444', touchAction: 'none', display: 'block', margin: '0 auto', width: '100%', maxWidth: 700, height: 'auto', minHeight: 300 }}
         onMouseDown={isDrawing && tool !== 'fill' ? handlePointerDown : undefined}
         onMouseMove={isDrawing && tool !== 'fill' ? handlePointerMove : undefined}
         onMouseUp={isDrawing && tool !== 'fill' ? handlePointerUp : undefined}
@@ -211,6 +213,28 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, di
         onTouchEnd={isDrawing && tool !== 'fill' ? handlePointerUp : undefined}
         onClick={tool === 'fill' ? handleCanvasClick : undefined}
       />
+      <style>{`
+        @media (max-width: 600px) {
+          canvas {
+            max-width: 98vw !important;
+            width: 100vw !important;
+            height: auto !important;
+          }
+        }
+      `}</style>
+      {renderControls && renderControls({
+        onUndo,
+        onRedo,
+        setColor,
+        setWidth,
+        setTool,
+        setIsEraser,
+        color,
+        width,
+        tool,
+        isEraser,
+        disabled
+      })}
     </div>
   );
 } 

@@ -11,7 +11,6 @@ import { useSocket } from '../contexts/SocketContext';
 import useSocketEvents from '../hooks/useSocketEvents';
 import SettingsPanel from '../components/SettingsPanel';
 import Modal from '../components/Modal';
-import useVoiceChat from '../hooks/useVoiceChat';
 import DrawerBanner from '../components/DrawerBanner';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -28,44 +27,85 @@ import 'react-toastify/dist/ReactToastify.css';
 // const messagesEndRef = useRef(null);
 // document.head.appendChild(style);
 
-function TopBar({ round, maxRounds, timeLeft, onSettings, phase, isDrawer, isHost, onLeave, onCloseRoom, selectedWordOrBlanks }) {
+function TopBar({ round, maxRounds, timeLeft, onLeave, selectedWordOrBlanks }) {
   return (
     <div className="topbar-responsive" style={{
       display: 'flex',
       alignItems: 'center',
-      background: '#1a2a3a', // Restore dark background
+      justifyContent: 'space-between',
+      background: '#1a2a3a',
       borderRadius: 12,
-      padding: '12px 28px',
-      marginBottom: 18,
+      padding: '8px 16px',
+      marginBottom: 8,
       minHeight: 0,
-      height: 72,
-      gap: 0,
+      height: 'auto',
       fontFamily: 'Inter, Segoe UI, Arial, sans-serif',
       color: '#fff',
-      boxShadow: '0 2px 16px #232c5b22', // Restore shadow
+      boxShadow: '0 2px 16px #232c5b22',
+      width: '100%',
+      flexWrap: 'wrap',
+      boxSizing: 'border-box',
+      gap: '6px'
     }}>
-      {/* Left: Timer and round */}
-      <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, fontSize: 22, minWidth: 170 }}>
-        <span className="topbar-timer" style={{ background: '#fff', color: '#222', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 16, fontWeight: 700, fontSize: 22 }}>{timeLeft}</span>
-        <span className="topbar-round" style={{ fontSize: 18 }}>Round {round} of {maxRounds}</span>
-      </div>
-      {/* Center: Selected word or blanks */}
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 200 }}>
-        <span className="topbar-word" style={{ fontSize: 32, fontWeight: 800, letterSpacing: 4, color: '#a7bfff', fontFamily: 'Inter, Segoe UI, Arial, sans-serif', textShadow: '0 2px 8px #232c5b44' }}>
-          {selectedWordOrBlanks}
+      {/* Left: Timer + Round */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        flexWrap: 'nowrap',
+        fontWeight: 700
+      }}>
+        <span className="topbar-timer" style={{
+          background: '#fff',
+          color: '#222',
+          borderRadius: '50%',
+          width: 40,
+          height: 40,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: 22
+        }}>{timeLeft}</span>
+        <span className="topbar-round" style={{ fontSize: window.innerWidth <= 400 ? 14 : 18 }}>
+          Round {round} of {maxRounds}
         </span>
       </div>
-      {/* Right: Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 220, justifyContent: 'flex-end' }}>
-        {onCloseRoom && (
-          <button className="btn btn-danger btn-sm" onClick={onCloseRoom} style={{ marginRight: 8, fontWeight: 700, fontSize: 18, borderRadius: 8 }}>Close Room</button>
-        )}
-        <button className="btn btn-outline-danger btn-sm" onClick={onLeave} style={{ marginRight: 8, fontWeight: 700, fontSize: 18, borderRadius: 8 }}>Leave Room</button>
-        <button onClick={onSettings} style={{ background: 'none', border: 'none', fontSize: 32, color: '#fff', cursor: 'pointer', borderRadius: 8 }} title="Settings">⚙️</button>
+      {/* Center: Word or Blanks */}
+      <div style={{
+        flex: 1,
+        textAlign: 'center',
+        fontWeight: 700,
+        fontSize: window.innerWidth <= 400 ? 16 : 18, // responsive font size
+        letterSpacing: 1,
+        color: '#a7bfff',
+        fontFamily: 'inherit'
+      }}>
+          {selectedWordOrBlanks}
+      </div>
+      {/* Right: Leave Button ONLY, nothing else */}
+      <div className="topbar-actions" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end'
+      }}>
+        <button className="btn btn-outline-danger btn-sm"
+          onClick={onLeave}
+          style={{
+            fontWeight: 700,
+            fontSize: 14,
+            borderRadius: 8,
+            padding: '6px 8px',
+            height: 30,
+            whiteSpace: 'nowrap'
+          }}>
+          Leave Room
+        </button>
       </div>
     </div>
   );
 }
+
 
 // Helper to merge scores into player objects
 function mergeScores(players, scores) {
@@ -135,9 +175,8 @@ export default function GameRoomPage() {
   }, [drawingData]);
   // Chat input state
   const [input, setInput] = useState('');
-  const [isMicOn, setIsMicOn] = useState(false);
-  const [micStatus, setMicStatus] = useState({}); // userId -> true/false
-  const [globalMuted, setGlobalMuted] = useState(false);
+  // Remove mic/voice state: isMicOn, setIsMicOn, micStatus, globalMuted
+  // Remove useVoiceChat, speakingUsers, onToggleMic, onMute, and related socket logic
   const [showWaitingModal, setShowWaitingModal] = useState(false);
   const [waitingMsg, setWaitingMsg] = useState('');
   const [wordSelectTimer, setWordSelectTimer] = useState(10);
@@ -149,64 +188,17 @@ export default function GameRoomPage() {
   const isHostUser = !!room?.players?.find(p => p.userId === user?.userId && p.isHost);
   const isPending = room && user ? room.players.find(p => p.userId === user.userId)?.pending : false;
 
-  // Voice chat hook - must be at top level
-  const { speakingUsers } = useVoiceChat({ 
-    isMicOn, 
-    roomCode, 
-    user, 
-    socket, 
-    players: room?.players || [], 
-    globalMuted, 
-    isHostUser 
-  });
-
-  // Broadcast mic status when toggled
-  useEffect(() => {
-    if (!socket || !user) return;
-    socket.emit('mic-status', { code: roomCode, userId: user.userId, isMicOn });
-  }, [isMicOn, socket, user, roomCode]);
-
-  // Listen for mic status updates from others
-  useEffect(() => {
-    if (!socket) return;
-    const handler = ({ userId, isMicOn }) => {
-      setMicStatus(prev => ({ ...prev, [userId]: isMicOn }));
-    };
-    socket.on('mic-status', handler);
-    return () => { socket.off('mic-status', handler); };
-  }, [socket]);
-
-  // Listen for global mute events
-  useEffect(() => {
-    if (!socket) return;
-    const handler = ({ muted }) => setGlobalMuted(muted);
-    socket.on('global-mute', handler);
-    return () => { socket.off('global-mute', handler); };
-  }, [socket]);
-
-  // Listen for 'waiting-for-players' event from backend
-  useEffect(() => {
-    if (!socket) return;
-    const handler = ({ message }) => {
-      setWaitingMsg(message || 'Waiting for other players...');
-      setShowWaitingModal(true);
-    };
-    socket.on('waiting-for-players', handler);
-    return () => { socket.off('waiting-for-players', handler); };
-  }, [socket]);
+  // Remove useVoiceChat hook
+  // Remove mic/voice related useEffects
 
   // Undo last action
   const handleUndo = () => {
     if (isDrawer && drawingData.length > 0) {
-      // Remove last group (stroke/fill) or segment if only segments exist
-      let newData = [...drawingData];
-      // If last is a stroke group, remove it; else, remove last segment
-      if (newData[newData.length - 1]?.type === 'stroke' || newData[newData.length - 1]?.type === 'fill') {
-        newData = newData.slice(0, -1);
-      } else {
-        // Remove all trailing segments (shouldn't happen, but fallback)
-        while (newData.length && !newData[newData.length - 1].type) newData.pop();
-      }
+      // Find the last index of a stroke or fill
+      let idx = drawingData.length - 1;
+      while (idx >= 0 && !drawingData[idx].type) idx--;
+      if (idx < 0) return; // No stroke/fill found
+      const newData = drawingData.slice(0, idx);
       setDrawingData(newData);
       socket.emit('draw-data', { code: room.code, data: { type: 'set', stack: newData } });
     }
@@ -434,7 +426,7 @@ export default function GameRoomPage() {
         drawerId: gameState.drawingPlayerId,
       });
       setShowRoundSummary(true);
-      // Auto-close after 1 second
+      // Auto-close after 2 seconds
       const t = setTimeout(() => setShowRoundSummary(false), 2000);
       return () => clearTimeout(t);
     }
@@ -474,7 +466,7 @@ export default function GameRoomPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'rgba(24,26,27,0.98)' }}>
         <div style={{ background: '#23272b', color: '#a777e3', borderRadius: 16, padding: '32px 48px', fontSize: 28, fontWeight: 700, boxShadow: '0 2px 16px #6e44ff22', marginBottom: 16 }}>
-          You’ll join next round!
+          You'll join next round!
         </div>
         <div style={{ color: '#fff', fontSize: 18, opacity: 0.7 }}>Please wait for the current round to finish.</div>
       </div>
@@ -498,20 +490,27 @@ export default function GameRoomPage() {
     }
   };
 
+  // Ensure handleDraw does not push to drawingData, only for real-time updates
   const handleDraw = (line) => {
-    // Real-time: add segment to tempStroke and drawingData
-    setTempStroke(stroke => [...stroke, line]);
-    setDrawingData(data => [...data, line]);
-    socket.emit('draw-data', { code: room.code, data: line });
+    if (line.type === 'fill') {
+      // Add fill to drawingData as a grouped object
+      const newData = [...drawingData, line];
+      setDrawingData(newData);
+      socket.emit('draw-data', { code: room.code, data: { type: 'set', stack: newData } });
+    } else {
+      // Only add to tempStroke for pen/eraser
+      setTempStroke(stroke => [...stroke, line]);
+      socket.emit('draw-data', { code: room.code, data: line });
+    }
   };
+  // Replace handleStrokeEnd implementation
   const handleStrokeEnd = (stroke) => {
-    // Remove tempStroke segments from drawingData, then add the grouped stroke
-    setDrawingData(data => {
-      const withoutTemp = data.slice(0, -tempStroke.length);
-      return [...withoutTemp, stroke];
-    });
-    setTempStroke([]);
-    socket.emit('draw-data', { code: room.code, data: stroke });
+    // stroke should be { type: 'stroke', lines: [...] }
+    if (!stroke || !stroke.lines || stroke.lines.length === 0) return;
+    const newData = [...drawingData, { type: 'stroke', lines: stroke.lines }];
+    setDrawingData(newData);
+    setTempStroke([]); // Clear tempStroke after stroke ends
+    socket.emit('draw-data', { code: room.code, data: { type: 'set', stack: newData } });
   };
 
   // Save settings handler
@@ -553,124 +552,611 @@ export default function GameRoomPage() {
   // Use mergedPlayers for PlayerList and ScoreBoard
   return (
     <div className="container game-room-responsive" style={{ width: '100%', margin: '24px 0 0 0', borderRadius: 0, padding: 0, boxShadow: 'none', position: 'relative', minHeight: '100vh', boxSizing: 'border-box' }}>
-      <div style={{
-        width: '100%',
+      {/* --- Heading Bar --- */}
+      <div className="game-header-row" style={{
         display: 'flex',
-        justifyContent: 'center',
+        flexDirection: 'row',
         alignItems: 'center',
-        margin: '18px 0 0 0',
-        padding: 0,
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 8,
+        gap: 0,
         position: 'relative',
+        background: '#23272b',
+        borderRadius: 12,
+        padding: '12px 32px', // restore original
+        height: 72, // restore original
+        minHeight: 0,
+        boxSizing: 'border-box',
       }}>
-        <span className="homepage-title" style={{ fontSize: 38, fontWeight: 700, letterSpacing: 2, color: '#a777e3', display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap' }}>
+        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: 'none', fontSize: 32, color: '#b7b7d7', cursor: 'pointer', borderRadius: 8, marginRight: 0, flex: '0 0 54px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 12 }} title="Settings">⚙️</button>
+        <div style={{
+  flex: 1,
+  textAlign: 'center',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center'
+}}>
+  <span className="homepage-title" style={{
+    fontSize: '2.8rem',
+    fontWeight: 900,
+    letterSpacing: 2,
+    color: '#a777e3',
+    textShadow: '0 2px 8px #6e44ff33',
+    whiteSpace: 'nowrap'
+  }}>
           🎨 SketchIt 🖌️
         </span>
-        {isHost && (
+</div>
+
+        {isHost ? (
           <button
             onClick={handleCloseRoom}
+            className="close-room-btn"
             style={{
-              position: 'absolute',
-              right: 24,
-              top: '50%',
-              transform: 'translateY(-50%)',
               background: '#e53935',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
               fontWeight: 700,
-              fontSize: 18,
-              padding: '8px 18px',
+              fontSize: '0.9rem',
+              padding: '6px 10px',
+              minWidth: 'auto',
+              width: 'fit-content',
+              maxWidth: '100px',
+              height: '32px',
+              whiteSpace: 'nowrap',
               boxShadow: '0 2px 8px #e5393533',
-              cursor: 'pointer',
-              zIndex: 2,
+              flex: '0 0 130px',
+              paddingRight: 16,
             }}
           >
             Close Room
           </button>
-        )}
+        ) : <div style={{ width: 130 }} />}
       </div>
+      {/* --- Sub-Heading Bar (TopBar) --- */}
       <TopBar
         round={gameState?.round || 1}
         maxRounds={gameState?.maxRounds || 1}
         timeLeft={timeLeft}
-        onSettings={() => setShowSettings(true)}
-        phase={phase}
-        isDrawer={isDrawer}
-        isHost={isHost}
         onLeave={handleLeaveRoom}
-        onCloseRoom={undefined}
         selectedWordOrBlanks={isDrawer ? (gameState?.currentWord || '') : (maskedWord || wordBlanks)}
       />
       <style>{`
-@media (max-width: 900px) {
-  .game-room-flex-row { display: none !important; }
-  .game-room-flex-responsive { display: flex !important; }
-}
-@media (min-width: 901px) {
-  .game-room-flex-row { display: flex !important; }
-  .game-room-flex-responsive { display: none !important; }
-}
-@media (max-width: 900px) {
+@media (max-width: 400px) {
+  body, html {
+    overflow-x: hidden !important;
+  }
+  .game-header-row {
+    height: 38px !important;
+    padding: 1px 4px !important;
+    gap: 4px !important;
+  }
+  .homepage-title {
+    font-size: 1.1rem !important;
+    text-align: center !important;
+    flex: 1 1 0 !important;
+    margin: 0 !important;
+    letter-spacing: 0.5px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    padding: 0 !important;
+  }
+  .close-room-btn {
+    font-size: 0.7rem !important;
+    padding: 2px 8px !important;
+    max-height: 22px !important;
+    border-radius: 6px !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    flex: none !important;
+    align-self: center !important;
+    margin-left: 4px !important;
+    margin-right: 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
   .topbar-responsive {
-    font-size: 13px !important;
-    height: 54px !important;
-    min-height: 0 !important;
-    padding: 6px 8px !important;
+    height: 38px !important;
+    padding: 4px 2px !important;
+    border-radius: 8px !important;
+    align-items: center !important;
+    gap: 0 !important;
+    font-size: 0.8rem !important;
+    flex-wrap: nowrap !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
   }
   .topbar-timer {
-    font-size: 16px !important;
-    width: 32px !important;
-    height: 32px !important;
-    margin-right: 8px !important;
+    font-size: 0.9rem !important;
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    min-height: 22px !important;
+    margin-right: 4px !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    color: #232c5b !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 4px #232c5b22 !important;
   }
   .topbar-round {
-    font-size: 14px !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    margin-right: 2px !important;
+    white-space: nowrap !important;
   }
   .topbar-word {
-    font-size: 18px !important;
-    letter-spacing: 2px !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 1px !important;
+    font-weight: 800 !important;
+    color: #a7bfff !important;
+    text-shadow: 0 1px 4px #232c5b44 !important;
+    text-align: center !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    margin: 0 2px !important;
   }
-  .topbar-actions button, .topbar-actions svg {
-    font-size: 18px !important;
-    min-width: 28px !important;
-    padding: 2px 6px !important;
+  .topbar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
   }
-  .word-popup-responsive {
-    font-size: 1rem !important;
-    max-width: 90vw !important;
-    padding: 10px 8px !important;
-    border-radius: 12px !important;
+  .topbar-actions button, .topbar-actions .btn {
+    height: 19px !important;
+    font-size: 0.75rem !important;
+    padding: 2px 5px !important;
+    border-radius: 6px !important;
+    min-width: 38px !important;
+    max-width: 70px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+  .game-room-bottom-row {
+    flex-direction: row !important;
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .game-room-left, .game-room-right {
+    width: 47.5% !important;
+    min-width: 0 !important;
+    max-width: 47.5% !important;
+    flex: 1 1 47.5% !important;
+    box-sizing: border-box !important;
+    font-size: 0.68rem !important;
+    line-height: 1.1rem !important;
+    padding: 2px 2px 2px 2px !important;
+    margin: 0 !important;
+  }
+  .game-room-left {
+    padding: 2px 2px 2px 2px !important;
+    margin: 0 !important;
+  }
+  .game-room-right {
+    padding: 2px 2px 2px 2px !important;
+    margin: 0 !important;
+    font-size: 0.6rem !important;
+    border-radius: 10px !important;
+  }
+  .game-room-left h4,
+  .game-room-right h4 {
+    font-size: 0.75rem !important;
+    margin-bottom: 6px !important;
+  }
+  .game-room-left li,
+  .game-room-right li,
+  .game-room-right p,
+  .game-room-right span {
+    font-size: 0.65rem !important;
+  }
+  .game-room-right .chat-message,
+  .game-room-right .chat-input,
+  .game-room-right input[type="text"],
+  .game-room-right button {
+    font-size: 0.6rem !important;
+    height: 18px !important;
+    padding: 2px 4px !important;
+    margin: 0 !important;
+    border-radius: 4px !important;
+  }
+  .game-room-right > div:last-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 22px !important;
+  }
+  .game-room-right > div:last-child input[type="text"] {
+    width: 65% !important;
+    min-width: 0 !important;
+    max-width: 65% !important;
+    flex: 0 1 65% !important;
+    height: 18px !important;
+    padding: 2px 4px !important;
+    font-size: 0.6rem !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+  }
+  .game-room-right > div:last-child button {
+    width: 35% !important;
+    min-width: 0 !important;
+    max-width: 35% !important;
+    flex: 0 1 35% !important;
+    margin-left: 2px !important;
+    height: 18px !important;
+    padding: 2px 4px !important;
+    font-size: 0.6rem !important;
+    border-radius: 4px !important;
+  }
+  .chat-message {
+    font-size: 0.65rem !important;
+    padding: 3px 6px !important;
+  }
+  .chat-input,
+  .chat-input input,
+  .chat-input button {
+    font-size: 0.65rem !important;
+    height: 26px !important;
+  }
+  /* Drawing tool section (CanvasControls) tweaks for 400px */
+  .canvas-controls {
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 1px 0 !important;
+    margin-top: 2px !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+    gap: 1px !important;
+  }
+  .canvas-controls > div {
+    gap: 1px !important;
+    padding: 0 !important;
+  }
+  .canvas-controls button, .canvas-controls .btn, .canvas-controls .btn-sm {
+    width: 13px !important;
+    height: 13px !important;
+    min-width: 10px !important;
+    min-height: 10px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+    font-size: 0.6rem !important;
+    border-radius: 3px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .canvas-controls span[style*='inline-block'] {
+    width: 7px !important;
+    height: 7px !important;
+    min-width: 7px !important;
+    min-height: 7px !important;
+    max-width: 9px !important;
+    max-height: 9px !important;
+  }
+  /* Chat input row: input 65%, button 35% */
+  .game-room-right > div:last-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+  }
+  .game-room-right > div:last-child input[type="text"] {
+    width: 65% !important;
+    min-width: 0 !important;
+    max-width: 65% !important;
+    flex: 0 1 65% !important;
+  }
+  .game-room-right > div:last-child button {
+    width: 35% !important;
+    min-width: 0 !important;
+    max-width: 35% !important;
+    flex: 0 1 35% !important;
+    margin-left: 2px !important;
   }
 }
 @media (max-width: 600px) {
   .topbar-responsive {
-    font-size: 11px !important;
-    height: 44px !important;
-    padding: 4px 4px !important;
+    font-size: 9px !important;
+    height: 24px !important;
+    min-height: 0 !important;
+    padding: 1px 1px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    gap: 0 !important;
   }
   .topbar-timer {
-    font-size: 13px !important;
-    width: 24px !important;
-    height: 24px !important;
-    margin-right: 4px !important;
+    font-size: 8px !important;
+    width: 12px !important;
+    height: 12px !important;
+    margin-right: 1px !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
   }
   .topbar-round {
-    font-size: 11px !important;
+    font-size: 8px !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+    margin-right: 1px !important;
+  }
+  .topbar-word {
+    font-size: 8px !important;
+    letter-spacing: 0.5px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    margin: 0 1px !important;
+  }
+  .topbar-actions {
+    gap: 1px !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+    margin-left: 1px !important;
+  }
+  .topbar-actions button, .topbar-actions svg {
+    font-size: 8px !important;
+    min-width: 8px !important;
+    padding: 0 2px !important;
+  }
+}
+@media (max-width: 900px) {
+  .game-room-flex-row { display: none !important; }
+  .game-room-flex-responsive { display: flex !important; }
+  .topbar-responsive {
+    font-size: 12px !important;
+    height: 38px !important;
+    min-height: 0 !important;
+    padding: 4px 4px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    gap: 0 !important;
+  }
+  .topbar-timer {
+    font-size: 12px !important;
+    width: 18px !important;
+    height: 18px !important;
+    margin-right: 3px !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+  }
+  .topbar-round {
+    font-size: 10px !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+    margin-right: 2px !important;
   }
   .topbar-word {
     font-size: 13px !important;
     letter-spacing: 1px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    margin: 0 2px !important;
+  }
+  .topbar-actions {
+    gap: 2px !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+    margin-left: 2px !important;
   }
   .topbar-actions button, .topbar-actions svg {
-    font-size: 13px !important;
-    min-width: 22px !important;
+    font-size: 12px !important;
+    min-width: 14px !important;
     padding: 1px 3px !important;
   }
-  .word-popup-responsive {
-    font-size: 0.85rem !important;
-    max-width: 98vw !important;
-    padding: 6px 4px !important;
+  @media (min-width: 900px) {
+  .topbar-actions button, .topbar-actions .btn {
+    height: 30px !important;
+    font-size: 14px !important;
+    padding: 6px 8px !important;
     border-radius: 8px !important;
+    min-width: 54px !important;
+    max-width: 100px !important;
+  }
+}
+@media (max-width: 400px) {
+  .topbar-actions button, .topbar-actions .btn {
+    height: 21px !important;
+    font-size: 0.75rem !important;
+    padding: 3px 6px !important;
+    border-radius: 6px !important;
+    min-width: 44px !important;
+    max-width: 80px !important;
+  }
+}
+}
+@media (min-width: 768px) {
+  .topbar-responsive {
+    justify-content: center !important;
+    gap: 24px !important;
+  }
+  .topbar-word {
+    order: 2 !important;
+    font-size: 1.5rem !important;
+    text-align: center !important;
+    flex: 1 !important;
+  }
+  .topbar-round {
+    order: 1 !important;
+  }
+  .topbar-actions {
+    order: 3 !important;
+  }
+}
+@media (max-width: 400px) {
+  // ... existing code ...
+  .word-popup-responsive,
+  .modal-content, /* for round summary popup */
+  .modal-dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    border-radius: 8px !important;
+    padding: 8px 4px !important;
+    font-size: 0.9rem !important;
+  }
+  .word-popup-responsive {
+    padding: 8px 4px !important;
+    font-size: 0.9rem !important;
+    border-radius: 8px !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+  }
+  .modal-content, .modal-dialog {
+    padding: 8px 4px !important;
+    font-size: 0.9rem !important;
+    border-radius: 8px !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+  }
+  .game-room-left {
+    background: transparent !important;
+    position: static !important;
+    z-index: auto !important;
+    width: 47.5% !important;
+    max-width: 47.5% !important;
+    min-width: 0 !important;
+    flex: 1 1 47.5% !important;
+    box-sizing: border-box !important;
+  }
+  .game-room-right {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    height: 180px !important;
+    min-height: 120px !important;
+    background: #23272b !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+  }
+  .chat-message-area {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    padding: 4px 2px 0 2px !important;
+    margin-bottom: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    min-height: 40px !important;
+    max-height: calc(100% - 28px) !important;
+    box-sizing: border-box !important;
+  }
+  .game-room-right > div:last-child {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    background: #23272b !important;
+    border-top: 1px solid #353a40 !important;
+    padding: 4px 2px !important;
+    margin: 0 !important;
+    z-index: 3 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    border-radius: 0 0 10px 10px !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
+  }
+  .game-room-right > div:last-child input[type="text"] {
+    height: 20px !important;
+    padding: 2px 4px !important;
+    font-size: 0.6rem !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+  }
+  .game-room-right > div:last-child button {
+    height: 20px !important;
+    padding: 2px 8px !important;
+    font-size: 0.6rem !important;
+    border-radius: 4px !important;
+    margin-left: 2px !important;
+  }
+  .player-list-container {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 4px 2px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+  }
+  .player-list-container > div,
+  .player-list-container ul > div {
+    padding: 4px 4px !important;
+    border-radius: 6px !important;
+    margin-bottom: 3px !important;
+  }
+  .player-list-container span,
+  .player-list-container button {
+    font-size: 0.7rem !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .player-list-container span[style*='width: 32px'] {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 16px !important;
+    border-radius: 5px !important;
+  }
+  .game-room-bottom-row {
+    height: 220px !important;
+    min-height: 120px !important;
+    max-height: 60vh !important;
+    align-items: stretch !important;
+  }
+  .game-room-left, .game-room-right {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+  }
+  .game-room-right {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    background: #23272b !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
   }
 }
 `}</style>
@@ -684,16 +1170,68 @@ export default function GameRoomPage() {
               <WordPopup words={gameState.wordChoices} onSelect={handleWordSelect} timer={wordSelectTimer} />
             </div>
           )}
+          {/* In the responsive layout, in the Canvas Row, add this overlay for non-drawers during word selection */}
+          {shouldShowWaitingForDrawer && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(0,0,0,0.45)',
+              }}
+            >
+              <div
+                style={{
+                  color: '#fff',
+                  fontSize: 'clamp(18px, 5vw, 28px)',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  background: 'linear-gradient(135deg, #23272b 80%, #3a3f5a 100%)',
+                  borderRadius: 20,
+                  padding: 'clamp(18px, 6vw, 40px) clamp(16px, 8vw, 60px)',
+                  boxShadow: '0 4px 32px #000a, 0 0 16px #a777e344',
+                  border: '2.5px solid #a777e3',
+                  letterSpacing: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 18,
+                  maxWidth: 420,
+                  margin: '0 auto',
+                  position: 'relative',
+                  animation: 'fadeInDown 0.7s',
+                }}
+              >
+                <span style={{ fontSize: 'clamp(28px, 7vw, 38px)', marginBottom: 10 }}>⏳</span>
+                Waiting for drawer to select the word...
+                <span style={{ fontSize: 'clamp(13px, 3vw, 16px)', color: '#a7bfff', fontWeight: 400, marginTop: 8 }}>Get ready to guess!</span>
+              </div>
+            </div>
+          )}
           <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '100%' }}>
             <Canvas
               isDrawing={isDrawer && phase === 'drawing'}
               onDraw={handleDraw}
+              onStrokeEnd={handleStrokeEnd}
               drawingData={drawingData}
               disabled={!(isDrawer && phase === 'drawing')}
               tool={tool}
               isEraser={isEraser}
               color={color}
               width={width}
+              tempStroke={tempStroke}
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                height: 'auto',
+                aspectRatio: '4/3',
+              }}
             />
             {isDrawer && phase === 'drawing' && (
               <CanvasControls
@@ -707,7 +1245,11 @@ export default function GameRoomPage() {
                 setIsEraser={setIsEraser}
                 disabled={false}
                 onUndo={handleUndo}
-                canUndo={drawingData.length > 0}
+                canUndo={drawingData.some(item => item.type)}
+                onClear={() => {
+                  setDrawingData([]);
+                  socket.emit('draw-data', { code: room.code, data: { type: 'clear' } });
+                }}
               />
             )}
           </div>
@@ -716,32 +1258,13 @@ export default function GameRoomPage() {
         <div className="game-room-bottom-row" style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: 0, background: 'none', border: 'none', boxShadow: 'none', padding: 0 }}>
           <div className="game-room-left" style={{ minWidth: 160, maxWidth: 320, width: '50%', display: 'flex', flexDirection: 'column', gap: 20, minHeight: 220, background: '#222', borderRadius: '0 0 0 16px', boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
             <PlayerList
-              players={mergedPlayers.map(p => ({ ...p, isMicOn: micStatus[p.userId] }))}
-              speakingUserIds={Object.entries(speakingUsers).filter(([_, v]) => v).map(([k]) => k)}
+              players={mergedPlayers}
               hostId={room?.players?.find(p => p.isHost)?.userId}
               drawerId={gameState?.drawingPlayerId}
               myUserId={user?.userId}
-              onMute={userId => {
-                if (userId === 'all') {
-                  socket.emit('global-mute', { code: roomCode, muted: !globalMuted });
-                  setGlobalMuted(m => !m);
-                } else {
-                  // Optionally: emit individual mute event if needed
-                }
-              }}
-              onToggleMic={userId => {
-                if (userId === user.userId) {
-                  setIsMicOn(m => !m);
-                } else if (isHostUser) {
-                  // Optionally: emit event to toggle another user's mic (if supported)
-                }
-              }}
               onKick={userId => {
                 socket.emit('room:kick', { code: roomCode, userId });
               }}
-              globalMuted={globalMuted}
-              isHostUser={isHostUser}
-              micStatus={micStatus}
             />
           </div>
           <div className="game-room-right" style={{ minWidth: 220, maxWidth: 440, width: '50%', display: 'flex', flexDirection: 'column', minHeight: 220, height: '100%', background: '#23272b', borderRadius: '0 0 16px 0', boxShadow: '0 2px 16px #0006', padding: '0', justifyContent: 'flex-end', alignSelf: 'stretch', boxSizing: 'border-box' }}>
@@ -867,32 +1390,13 @@ export default function GameRoomPage() {
         {/* Left: Players/Scores */}
         <div className="game-room-left" style={{ flex: '1 1 0', minWidth: 160, maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
           <PlayerList
-            players={mergedPlayers.map(p => ({ ...p, isMicOn: micStatus[p.userId] }))}
-            speakingUserIds={Object.entries(speakingUsers).filter(([_, v]) => v).map(([k]) => k)}
+            players={mergedPlayers}
             hostId={room?.players?.find(p => p.isHost)?.userId}
             drawerId={gameState?.drawingPlayerId}
             myUserId={user?.userId}
-            onMute={userId => {
-              if (userId === 'all') {
-                socket.emit('global-mute', { code: roomCode, muted: !globalMuted });
-                setGlobalMuted(m => !m);
-              } else {
-                // Optionally: emit individual mute event if needed
-              }
-            }}
-            onToggleMic={userId => {
-              if (userId === user.userId) {
-                setIsMicOn(m => !m);
-              } else if (isHostUser) {
-                // Optionally: emit event to toggle another user's mic (if supported)
-              }
-            }}
             onKick={userId => {
               socket.emit('room:kick', { code: roomCode, userId });
             }}
-            globalMuted={globalMuted}
-            isHostUser={isHostUser}
-            micStatus={micStatus}
           />
         </div>
         {/* Center: Canvas */}
@@ -905,31 +1409,47 @@ export default function GameRoomPage() {
               <WordPopup words={gameState.wordChoices} onSelect={handleWordSelect} timer={wordSelectTimer} />
             </div>
           )}
+          {/* In both large and small screen canvas overlays, use the same waiting overlay for shouldShowWaitingForDrawer */}
           {shouldShowWaitingForDrawer && (
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
-              <div style={{
-                color: '#fff',
-                fontSize: 28,
-                fontWeight: 700,
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #23272b 80%, #3a3f5a 100%)',
-                borderRadius: 20,
-                padding: '40px 60px',
-                boxShadow: '0 4px 32px #000a, 0 0 16px #a777e344',
-                border: '2.5px solid #a777e3',
-                letterSpacing: 1,
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 20,
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                gap: 18,
-                maxWidth: 420,
-                margin: '0 auto',
-                position: 'relative',
-                animation: 'fadeInDown 0.7s',
-              }}>
-                <span style={{ fontSize: 38, marginBottom: 10 }}>⏳</span>
+                justifyContent: 'center',
+                background: 'rgba(0,0,0,0.45)',
+              }}
+            >
+              <div
+                style={{
+                  color: '#fff',
+                  fontSize: 'clamp(18px, 5vw, 28px)',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  background: 'linear-gradient(135deg, #23272b 80%, #3a3f5a 100%)',
+                  borderRadius: 20,
+                  padding: 'clamp(18px, 6vw, 40px) clamp(16px, 8vw, 60px)',
+                  boxShadow: '0 4px 32px #000a, 0 0 16px #a777e344',
+                  border: '2.5px solid #a777e3',
+                  letterSpacing: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 18,
+                  maxWidth: 420,
+                  margin: '0 auto',
+                  position: 'relative',
+                  animation: 'fadeInDown 0.7s',
+                }}
+              >
+                <span style={{ fontSize: 'clamp(28px, 7vw, 38px)', marginBottom: 10 }}>⏳</span>
                 Waiting for drawer to select the word...
-                <span style={{ fontSize: 16, color: '#a7bfff', fontWeight: 400, marginTop: 8 }}>Get ready to guess!</span>
+                <span style={{ fontSize: 'clamp(13px, 3vw, 16px)', color: '#a7bfff', fontWeight: 400, marginTop: 8 }}>Get ready to guess!</span>
               </div>
             </div>
           )}
@@ -937,12 +1457,20 @@ export default function GameRoomPage() {
             <Canvas
               isDrawing={isDrawer && phase === 'drawing'}
               onDraw={handleDraw}
+              onStrokeEnd={handleStrokeEnd}
               drawingData={drawingData}
               disabled={!(isDrawer && phase === 'drawing')}
               tool={tool}
               isEraser={isEraser}
               color={color}
               width={width}
+              tempStroke={tempStroke}
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                height: 'auto',
+                aspectRatio: '4/3',
+              }}
             />
             {isDrawer && phase === 'drawing' && (
               <CanvasControls
@@ -956,7 +1484,11 @@ export default function GameRoomPage() {
                 setIsEraser={setIsEraser}
                 disabled={false}
                 onUndo={handleUndo}
-                canUndo={drawingData.length > 0}
+                canUndo={drawingData.some(item => item.type)}
+                onClear={() => {
+                  setDrawingData([]);
+                  socket.emit('draw-data', { code: room.code, data: { type: 'clear' } });
+                }}
               />
             )}
           </div>
@@ -1099,7 +1631,7 @@ export default function GameRoomPage() {
         <div>{drawerChangeMsg}</div>
       </Modal>
       {/* Round Summary Modal */}
-      <Modal open={showRoundSummary} onClose={() => setShowRoundSummary(false)} title="Round Summary">
+      <Modal open={showRoundSummary} title="Round Summary" className="round-summary-modal">
         {roundSummaryData && (
           <div>
             <div style={{ marginBottom: 16, textAlign: 'center' }}>
@@ -1169,25 +1701,28 @@ export default function GameRoomPage() {
   );
 }
 
-function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEraser, setIsEraser, disabled, onUndo, canUndo }) {
+function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEraser, setIsEraser, disabled, onUndo, canUndo, onClear }) {
   const COLORS = [
     '#000', '#222', '#fff', '#e53935', '#fbc02d', '#43a047', '#1e88e5',
     '#8e24aa', '#00bcd4', '#ff9800', '#795548', '#c0c0c0', '#ffb6c1',
     '#ffd700', '#90ee90', '#00ced1', '#4682b4', '#dda0dd', '#ff6347', '#40e0d0', '#a0522d'
   ];
-  const SIZES = [2, 4, 8, 16, 24];
+  // Remove the largest pen size (24), and increase eraser size (32)
+  const SIZES = [2, 4, 8, 16];
+  const ERASER_SIZE = 32;
   const toolButtons = [
     { key: 'undo', icon: '↩️', onClick: onUndo, disabled: disabled || !canUndo, title: 'Undo', style: { background: (disabled || !canUndo) ? '#444' : '#fff', color: '#23272b', fontWeight: 700, border: '1px solid #888' } },
     { key: 'pen', icon: '✏️', onClick: () => { setTool('pen'); setIsEraser(false); }, disabled, title: 'Pen', style: { background: tool === 'pen' ? '#b39ddb' : '#fff', border: '1px solid #888' } },
-    { key: 'eraser', icon: '🧽', onClick: () => { setTool('eraser'); setIsEraser(true); }, disabled, title: 'Eraser', style: { background: tool === 'eraser' ? '#ffe082' : '#fff', border: '1px solid #888' } },
+    { key: 'eraser', icon: '🧽', onClick: () => { setTool('eraser'); setIsEraser(true); setWidth(ERASER_SIZE); }, disabled, title: 'Eraser', style: { background: tool === 'eraser' ? '#ffe082' : '#fff', border: '1px solid #888' } },
+    { key: 'clear', icon: '🗑️', onClick: onClear, disabled, title: 'Clear All', style: { background: '#fff', border: '1px solid #888', color: '#e53935', fontWeight: 700 } },
     { key: 'fill', icon: '🪣', onClick: () => { setTool('fill'); setIsEraser(false); }, disabled, title: 'Fill', style: { background: tool === 'fill' ? '#b2ebf2' : '#fff', border: '1px solid #888' } },
     ...SIZES.map((s) => ({
       key: `size${s}`,
       icon: <span style={{ display: 'inline-block', background: '#fff', borderRadius: '50%', width: s, height: s, border: '1.5px solid #888' }} />,
-      onClick: () => setWidth(s),
+      onClick: () => { setWidth(s); setIsEraser(false); setTool('pen'); },
       disabled,
       title: `Pen size ${s}`,
-      style: { border: width === s ? '2.5px solid #a7bfff' : '1px solid #888', background: '#23272b', boxShadow: width === s ? '0 0 8px #a7bfff' : 'none' }
+      style: { border: width === s && !isEraser ? '2.5px solid #a7bfff' : '1px solid #888', background: '#23272b', boxShadow: width === s && !isEraser ? '0 0 8px #a7bfff' : 'none' }
     }))
   ];
 
