@@ -27,47 +27,55 @@ import 'react-toastify/dist/ReactToastify.css';
 // const messagesEndRef = useRef(null);
 // document.head.appendChild(style);
 
-function TopBar({ round, maxRounds, timeLeft, onLeave, selectedWordOrBlanks }) {
+function TopBar({ round, maxRounds, timeLeft, onLeave, selectedWordOrBlanks, leaveBtnStyle }) {
   return (
     <div className="topbar-responsive" style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       background: '#1a2a3a',
-      borderRadius: 12,
-      padding: '8px 16px',
+      width: window.innerWidth <= 400 ? '100vw' : '100%',
+      maxWidth: window.innerWidth <= 400 ? '100vw' : '100%',
+      overflowX: 'hidden',
+      boxSizing: 'border-box',
+      borderRadius: window.innerWidth <= 400 ? 12 : 0,
+      padding: window.innerWidth <= 400 ? '2px 0px' : '8px 16px',
       marginBottom: 8,
       minHeight: 0,
       height: 'auto',
       fontFamily: 'Inter, Segoe UI, Arial, sans-serif',
       color: '#fff',
       boxShadow: '0 2px 16px #232c5b22',
-      width: '100%',
-      flexWrap: 'wrap',
-      boxSizing: 'border-box',
-      gap: '6px'
+      flexWrap: 'nowrap',
+      gap: window.innerWidth <= 400 ? 0 : '6px',
     }}>
       {/* Left: Timer + Round */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        gap: window.innerWidth <= 400 ? 4 : 10,
         flexWrap: 'nowrap',
-        fontWeight: 700
+        fontWeight: 700,
+        minWidth: 0,
+        flexShrink: 1,
+        overflowX: 'hidden',
       }}>
         <span className="topbar-timer" style={{
           background: '#fff',
           color: '#222',
           borderRadius: '50%',
-          width: 40,
-          height: 40,
+          width: window.innerWidth <= 400 ? 22 : 40,
+          height: window.innerWidth <= 400 ? 22 : 40,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontWeight: 700,
-          fontSize: 22
+          fontSize: window.innerWidth <= 400 ? 13 : 22,
+          minWidth: 0,
+          flexShrink: 1,
+          overflowX: 'hidden',
         }}>{timeLeft}</span>
-        <span className="topbar-round" style={{ fontSize: window.innerWidth <= 400 ? 14 : 18 }}>
+        <span className="topbar-round" style={{ fontSize: window.innerWidth <= 400 ? 10 : 18, minWidth: 0, flexShrink: 1, overflowX: 'hidden' }}>
           Round {round} of {maxRounds}
         </span>
       </div>
@@ -76,10 +84,15 @@ function TopBar({ round, maxRounds, timeLeft, onLeave, selectedWordOrBlanks }) {
         flex: 1,
         textAlign: 'center',
         fontWeight: 700,
-        fontSize: window.innerWidth <= 400 ? 16 : 18, // responsive font size
+        fontSize: window.innerWidth <= 400 ? 12 : 32, // Much larger for desktop
         letterSpacing: 1,
         color: '#a7bfff',
-        fontFamily: 'inherit'
+        fontFamily: 'inherit',
+        minWidth: 0,
+        flexShrink: 1,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
       }}>
           {selectedWordOrBlanks}
       </div>
@@ -87,18 +100,34 @@ function TopBar({ round, maxRounds, timeLeft, onLeave, selectedWordOrBlanks }) {
       <div className="topbar-actions" style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-end'
+        justifyContent: 'flex-end',
+        minWidth: 0,
+        flexShrink: 1,
+        overflowX: 'hidden',
+        height: window.innerWidth <= 400 ? 21 : 'auto',
       }}>
         <button className="btn btn-outline-danger btn-sm"
           onClick={onLeave}
           style={{
             fontWeight: 700,
-            fontSize: 14,
-            borderRadius: 8,
-            padding: '6px 8px',
-            height: 30,
-            whiteSpace: 'nowrap'
-          }}>
+            fontSize: window.innerWidth <= 400 ? '0.6rem' : 14,
+            borderRadius: 6,
+            padding: window.innerWidth <= 400 ? '1px 3px' : '10px 32px',
+            height: window.innerWidth <= 400 ? 16 : 40,
+            minHeight: window.innerWidth <= 400 ? 16 : 40,
+            minWidth: window.innerWidth <= 400 ? 0 : 180,
+            maxWidth: window.innerWidth <= 400 ? 36 : 220,
+            width: window.innerWidth <= 400 ? 36 : 200,
+            boxSizing: 'border-box',
+            margin: 0,
+            overflowX: 'hidden',
+            whiteSpace: 'nowrap',
+            lineHeight: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           Leave Room
         </button>
       </div>
@@ -551,47 +580,59 @@ export default function GameRoomPage() {
 
   // Use mergedPlayers for PlayerList and ScoreBoard
   return (
-    <div className="container game-room-responsive" style={{ width: '100%', margin: '24px 0 0 0', borderRadius: 0, padding: 0, boxShadow: 'none', position: 'relative', minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div style={{ background: '#23272b', minHeight: '100vh' }}>
       {/* --- Heading Bar --- */}
       <div className="game-header-row" style={{
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center', // Center everything horizontally
         width: '100%',
         marginBottom: 8,
         gap: 0,
         position: 'relative',
-        background: '#23272b',
-        borderRadius: 12,
-        padding: '12px 32px', // restore original
-        height: 72, // restore original
+        background: 'linear-gradient(90deg, #a777e3 0%, #6e44ff 100%)',
+        padding: window.innerWidth <= 400 ? '2px 4px' : '12px 32px',
+        height: window.innerWidth <= 400 ? 38 : 72,
         minHeight: 0,
         boxSizing: 'border-box',
       }}>
-        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: 'none', fontSize: 32, color: '#b7b7d7', cursor: 'pointer', borderRadius: 8, marginRight: 0, flex: '0 0 54px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 12 }} title="Settings">⚙️</button>
+        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: 'none', fontSize: window.innerWidth <= 400 ? 22 : 32, color: '#23272b', cursor: 'pointer', borderRadius: 8, marginRight: 0, flex: '0 0 54px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 12, position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} title="Settings">
+          <svg width={window.innerWidth <= 400 ? 22 : 32} height={window.innerWidth <= 400 ? 22 : 32} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g>
+              <circle cx="16" cy="16" r="4" fill="#fff"/>
+              <path d="M28 18.1v-4.2l-3.1-.5c-.2-.7-.4-1.3-.7-1.9l1.8-2.6-3-3-2.6 1.8c-.6-.3-1.2-.5-1.9-.7l-.5-3.1h-4.2l-.5 3.1c-.7.2-1.3.4-1.9.7L7.6 5.9l-3 3 1.8 2.6c-.3.6-.5 1.2-.7 1.9l-3.1.5v4.2l3.1.5c.2.7.4 1.3.7 1.9l-1.8 2.6 3 3 2.6-1.8c.6.3 1.2.5 1.9.7l.5 3.1h4.2l.5-3.1c.7-.2 1.3-.4 1.9-.7l2.6 1.8 3-3-1.8-2.6c.3-.6.5-1.2.7-1.9l3.1-.5zM16 21a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" fill="#183153"/>
+            </g>
+          </svg>
+        </button>
         <div style={{
-  flex: 1,
-  textAlign: 'center',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center'
-}}>
-  <span className="homepage-title" style={{
-    fontSize: '2.8rem',
-    fontWeight: 900,
-    letterSpacing: 2,
-    color: '#a777e3',
-    textShadow: '0 2px 8px #6e44ff33',
-    whiteSpace: 'nowrap'
-  }}>
+          flex: 1,
+          textAlign: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        }}>
+          <span className="homepage-title" style={{
+            fontSize: window.innerWidth <= 400 ? '1.2rem' : '3.2rem', // Larger for desktop
+            fontWeight: 900,
+            letterSpacing: 2,
+            color: '#fff',
+            textShadow: '0 2px 8px #6e44ff33',
+            whiteSpace: 'nowrap',
+            lineHeight: 1.1,
+            margin: 0,
+        padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+      }}>
           🎨 SketchIt 🖌️
         </span>
-</div>
-
-        {isHost ? (
+        </div>
+        {(
           <button
-            onClick={handleCloseRoom}
+            onClick={isHost ? handleCloseRoom : undefined}
             className="close-room-btn"
             style={{
               background: '#e53935',
@@ -599,21 +640,31 @@ export default function GameRoomPage() {
               border: 'none',
               borderRadius: 8,
               fontWeight: 700,
-              fontSize: '0.9rem',
-              padding: '6px 10px',
-              minWidth: 'auto',
-              width: 'fit-content',
-              maxWidth: '100px',
-              height: '32px',
+              fontSize: window.innerWidth <= 400 ? '0.65rem' : '0.9rem',
+              padding: window.innerWidth <= 400 ? '2px 6px' : '10px 32px',
+              minWidth: window.innerWidth <= 400 ? 'auto' : 180,
+              width: window.innerWidth <= 400 ? 'fit-content' : 200,
+              maxWidth: window.innerWidth <= 400 ? '100px' : 220,
+              height: window.innerWidth <= 400 ? '22px' : '40px',
               whiteSpace: 'nowrap',
               boxShadow: '0 2px 8px #e5393533',
               flex: '0 0 130px',
               paddingRight: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'absolute',
+              right: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              visibility: isHost ? 'visible' : 'hidden',
+              pointerEvents: isHost ? 'auto' : 'none',
             }}
+            disabled={!isHost}
           >
             Close Room
           </button>
-        ) : <div style={{ width: 130 }} />}
+        )}
       </div>
       {/* --- Sub-Heading Bar (TopBar) --- */}
       <TopBar
@@ -622,6 +673,14 @@ export default function GameRoomPage() {
         timeLeft={timeLeft}
         onLeave={handleLeaveRoom}
         selectedWordOrBlanks={isDrawer ? (gameState?.currentWord || '') : (maskedWord || wordBlanks)}
+        leaveBtnStyle={window.innerWidth <= 400 ? {
+          fontSize: '0.7rem',
+          padding: '2px 6px',
+          height: '22px',
+          minWidth: 0,
+          maxWidth: '70px',
+          borderRadius: 6,
+        } : { fontSize: '2.2rem', fontWeight: 800 }}
       />
       <style>{`
 @media (max-width: 400px) {
@@ -1386,7 +1445,18 @@ export default function GameRoomPage() {
         </div>
       </div>
       {/* Original layout for large screens */}
-      <div className="game-room-flex-row" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 18, width: '100%', maxWidth: 1400, margin: '0 auto', padding: '0 2vw', boxSizing: 'border-box' }}>
+      <div className="game-room-flex-row" style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        gap: 8, // Reduced gap for closer sections
+        width: '100%',
+        maxWidth: 1400,
+        margin: '0 auto',
+        padding: '0 1vw', // Slightly reduced horizontal padding
+        boxSizing: 'border-box',
+      }}>
         {/* Left: Players/Scores */}
         <div className="game-room-left" style={{ flex: '1 1 0', minWidth: 160, maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
           <PlayerList
@@ -1631,10 +1701,26 @@ export default function GameRoomPage() {
         <div>{drawerChangeMsg}</div>
       </Modal>
       {/* Round Summary Modal */}
-      <Modal open={showRoundSummary} title="Round Summary" className="round-summary-modal">
+      <Modal open={showRoundSummary} title={null} className="round-summary-modal">
         {roundSummaryData && (
-          <div>
+          <div style={{
+            background: 'linear-gradient(135deg, #23272b 80%, #3a3f5a 100%)',
+            borderRadius: 20,
+            padding: 'clamp(18px, 6vw, 40px) clamp(16px, 8vw, 60px)',
+            boxShadow: '0 4px 32px #000a, 0 0 16px #a777e344',
+            border: '2.5px solid #a777e3',
+            maxWidth: 420,
+            margin: '0 auto',
+            position: 'relative',
+            animation: 'fadeInDown 0.7s',
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 18,
+          }}>
             <div style={{ marginBottom: 16, textAlign: 'center' }}>
+              <h2 style={{ color: '#a777e3', margin: '0 0 18px 0', fontWeight: 900, fontSize: 28, textAlign: 'center', letterSpacing: 1 }}>Round Summary</h2>
               <h4 style={{ color: '#a7bfff', marginBottom: 8 }}>The word was: {roundSummaryData.word}</h4>
               <div style={{ fontSize: 14, color: '#aaa', marginBottom: 16 }}>
                 Drawer: {roundSummaryData.players.find(p => p.userId === roundSummaryData.drawerId)?.name || 'Unknown'}
@@ -1697,6 +1783,71 @@ export default function GameRoomPage() {
         <div>{roundRestartMsg}</div>
       </Modal>
       <ToastContainer position="top-center" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+      {/* Settings Modal: Full-page, view-only overlay */}
+      <Modal open={showSettings} onClose={() => setShowSettings(false)} title={null} className="settings-fullscreen-modal" showClose={false} backdropStyle={{ background: 'rgba(30,32,40,0.98)', zIndex: 99999 }}>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'none',
+          padding: 0,
+          margin: 0,
+          boxSizing: 'border-box',
+          zIndex: 99999,
+        }}>
+          <div style={{
+            width: 'min(98vw, 480px)',
+            maxWidth: '98vw',
+            minWidth: 0,
+            background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)',
+            borderRadius: 18,
+            boxShadow: '0 4px 32px #000a, 0 0 16px #a777e344',
+            padding: 'clamp(12px, 4vw, 32px)',
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1rem',
+            position: 'relative',
+            margin: 'auto',
+          }}>
+            {/* Heading row with X close button to the right */}
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+              gap: 0,
+            }}>
+              <span style={{ color: '#a777e3', fontWeight: 800, fontSize: window.innerWidth <= 400 ? '1.1rem' : '1.3rem', letterSpacing: 1, margin: 0, whiteSpace: 'nowrap', lineHeight: 1 }}>Room Settings</span>
+              <button onClick={() => setShowSettings(false)} style={{
+                background: 'none',
+                border: 'none',
+                color: '#fff',
+                fontSize: window.innerWidth <= 400 ? 20 : 24,
+                fontWeight: 700,
+                cursor: 'pointer',
+                zIndex: 2,
+                lineHeight: 1,
+                padding: 0,
+                opacity: 0.7,
+                transition: 'opacity 0.2s',
+                marginLeft: 12,
+                alignSelf: 'center',
+              }} title="Close settings">×</button>
+            </div>
+            <SettingsPanel settings={room?.settings} isHost={false} onSave={() => {}} viewOnly />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -1710,12 +1861,12 @@ function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEra
   // Remove the largest pen size (24), and increase eraser size (32)
   const SIZES = [2, 4, 8, 16];
   const ERASER_SIZE = 32;
+  // Reorder tool buttons: fill (bucket) far left, then undo, pen, clear, sizes..., eraser far right
   const toolButtons = [
+    { key: 'fill', icon: '🪣', onClick: () => { setTool('fill'); setIsEraser(false); }, disabled, title: 'Fill', style: { background: tool === 'fill' ? '#b2ebf2' : '#fff', border: '1px solid #888' } },
     { key: 'undo', icon: '↩️', onClick: onUndo, disabled: disabled || !canUndo, title: 'Undo', style: { background: (disabled || !canUndo) ? '#444' : '#fff', color: '#23272b', fontWeight: 700, border: '1px solid #888' } },
     { key: 'pen', icon: '✏️', onClick: () => { setTool('pen'); setIsEraser(false); }, disabled, title: 'Pen', style: { background: tool === 'pen' ? '#b39ddb' : '#fff', border: '1px solid #888' } },
-    { key: 'eraser', icon: '🧽', onClick: () => { setTool('eraser'); setIsEraser(true); setWidth(ERASER_SIZE); }, disabled, title: 'Eraser', style: { background: tool === 'eraser' ? '#ffe082' : '#fff', border: '1px solid #888' } },
     { key: 'clear', icon: '🗑️', onClick: onClear, disabled, title: 'Clear All', style: { background: '#fff', border: '1px solid #888', color: '#e53935', fontWeight: 700 } },
-    { key: 'fill', icon: '🪣', onClick: () => { setTool('fill'); setIsEraser(false); }, disabled, title: 'Fill', style: { background: tool === 'fill' ? '#b2ebf2' : '#fff', border: '1px solid #888' } },
     ...SIZES.map((s) => ({
       key: `size${s}`,
       icon: <span style={{ display: 'inline-block', background: '#fff', borderRadius: '50%', width: s, height: s, border: '1.5px solid #888' }} />,
@@ -1723,49 +1874,71 @@ function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEra
       disabled,
       title: `Pen size ${s}`,
       style: { border: width === s && !isEraser ? '2.5px solid #a7bfff' : '1px solid #888', background: '#23272b', boxShadow: width === s && !isEraser ? '0 0 8px #a7bfff' : 'none' }
-    }))
+    })),
+    { key: 'eraser', icon: '🧽', onClick: () => { setTool('eraser'); setIsEraser(true); setWidth(ERASER_SIZE); }, disabled, title: 'Eraser', style: { background: tool === 'eraser' ? '#ffe082' : '#fff', border: '1px solid #888' } },
   ];
+
+  // Split toolButtons into a 3x3 grid (first 9 tools)
+  const toolGrid = [];
+  for (let i = 0; i < 3; i++) {
+    toolGrid.push(toolButtons.slice(i * 3, i * 3 + 3));
+  }
+
+  // Split COLORS into a 3x7 grid
+  const colorGrid = [];
+  for (let i = 0; i < 3; i++) {
+    colorGrid.push(COLORS.slice(i * 7, i * 7 + 7));
+  }
 
   return (
     <div className="canvas-controls" style={{
       background: 'linear-gradient(135deg, #23272b 60%, #3a3f5a 100%)',
       borderRadius: 14,
       boxShadow: '0 2px 16px #0006',
-      padding: '4px 0px', // reduced padding
-      marginTop: 4,       // reduced gap above tools
-      marginBottom: 24,   // tighter space below tools
+      padding: '12px 0px',
+      marginTop: 18,
+      marginBottom: 24,
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 4,
-      minWidth: 320,
+      gap: 0,
+      minWidth: 0,
       maxWidth: 700,
-      width: '100%',
-      minHeight: 84,
-      height: 84,
+      width: 700,
+      height: 108, // increased height for more vertical space
+      boxSizing: 'border-box',
+      border: '4px solid #444',
+      position: 'relative',
+      overflow: 'hidden',
+      marginLeft: 'auto',
+      marginRight: 'auto',
     }}>
-      <div style={{ flex: 7, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: 4, alignContent: 'center', justifyItems: 'center', borderRight: '2px solid #353a40', paddingRight: 2 }}>
-        {COLORS.map(c => (
+      {/* Color grid: 3 rows x 7 columns */}
+      <div style={{ display: 'grid', gridTemplateRows: 'repeat(3, 1fr)', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5, padding: '0 8px', alignItems: 'center', justifyItems: 'center', height: '100%' }}>
+        {colorGrid.flat().map((c, idx) => (
           <button
-            key={c}
+            key={c + idx}
             className="btn btn-sm"
-            style={{ background: c, border: color === c ? '2.5px solid #a7bfff' : '2px solid #fff', width: 24, height: 24, margin: 0, padding: 0, borderRadius: 6, boxShadow: color === c ? '0 0 8px #a7bfff' : 'none', transition: 'border 0.2s, box-shadow 0.2s' }}
+            style={{ background: c, border: color === c ? '2px solid #a7bfff' : '1.5px solid #fff', width: 22, height: 22, margin: 0, padding: 0, borderRadius: 5, boxShadow: color === c ? '0 0 6px #a7bfff' : 'none', transition: 'border 0.2s, box-shadow 0.2s' }}
             onClick={() => { setColor(c); setTool('pen'); setIsEraser(false); }}
             disabled={disabled}
             title={c}
           />
         ))}
       </div>
-      <div style={{ flex: 3, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: 4, alignItems: 'center', justifyItems: 'center', paddingLeft: 2 }}>
-        {toolButtons.slice(0, 9).map(btn => (
+      {/* Vertical divider */}
+      <div style={{ width: 2, height: '80%', background: '#353a40', borderRadius: 2, margin: '0 8px' }} />
+      {/* Tool grid: 3 rows x 3 columns */}
+      <div style={{ display: 'grid', gridTemplateRows: 'repeat(3, 1fr)', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, padding: '0 8px', alignItems: 'center', justifyItems: 'center', height: '100%' }}>
+        {toolGrid.flat().map((btn, idx) => (
           <button
-            key={btn.key}
+            key={btn.key + idx}
             className="btn btn-sm btn-light"
             onClick={btn.onClick}
             disabled={btn.disabled}
             title={btn.title}
-            style={{ width: 24, height: 24, borderRadius: 6, margin: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, ...btn.style }}
+            style={{ width: 22, height: 22, borderRadius: 5, margin: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, ...btn.style }}
           >
             {btn.icon}
           </button>
