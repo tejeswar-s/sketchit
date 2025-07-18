@@ -11,6 +11,10 @@ const initSocket = require('./socket');
 
 const app = express();
 
+console.log('Starting server...');
+console.log('PORT:', process.env.PORT);
+console.log('MONGO_URI:', process.env.MONGO_URI);
+
 // Middleware
 app.use(cors({
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
@@ -40,7 +44,7 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
 // Connect to DB and start server
-connectDB().then(() => {
+connectDB(process.env.MONGO_URI).then(() => {
   initSocket(server);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
