@@ -20,7 +20,7 @@ export default function JoinPage() {
     // Check if room exists
         const checkRoom = async () => {
       try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        const backendUrl = 'https://sketchit-backend.onrender.com';
         
         const response = await fetch(`${backendUrl}/api/rooms/${roomCode}`, {
           method: 'GET',

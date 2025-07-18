@@ -269,7 +269,7 @@ export default function GameRoomPage() {
   // Fetch room and game state if missing
   useEffect(() => {
     if (!room && roomCode) {
-      fetch(`http://localhost:5000/api/rooms/${roomCode}`)
+      fetch(`https://sketchit-backend.onrender.com/api/rooms/${roomCode}`)
         .then(res => res.json())
         .then(data => {
           setRoom(data);

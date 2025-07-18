@@ -7,9 +7,8 @@ export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // Use LAN IP if not localhost
-    const backendHost = window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname;
-    const s = io(`http://${backendHost}:5000`, {
+    // Use live backend URL for production
+    const s = io('https://sketchit-backend.onrender.com', {
       transports: ['websocket'],
       reconnection: true,
     });
