@@ -654,7 +654,7 @@ export default function GameRoomPage() {
               alignItems: 'center',
               justifyContent: 'center',
               position: 'absolute',
-              right: 16,
+              right: window.innerWidth <= 400 ? '2vw' : 16,
               top: '50%',
               transform: 'translateY(-50%)',
               visibility: isHost ? 'visible' : 'hidden',
@@ -984,6 +984,13 @@ export default function GameRoomPage() {
     min-width: 8px !important;
     padding: 0 2px !important;
   }
+  .btn, .form-control, input, button {
+    font-size: 1.08rem !important;
+    padding: 14px 0 !important;
+    /* min-height: 48px !important; */
+    width: 95% !important;
+    border-radius: 10px !important;
+  }
 }
 @media (max-width: 900px) {
   .game-room-flex-row { display: none !important; }
@@ -997,7 +1004,7 @@ export default function GameRoomPage() {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
-    width: 100vw !important;
+    width: 97vw !important;
     max-width: 100vw !important;
     box-sizing: border-box !important;
     gap: 0 !important;
@@ -1315,7 +1322,8 @@ export default function GameRoomPage() {
         </div>
         {/* Bottom Row: Player List (left) and Chat (right) */}
         <div className="game-room-bottom-row" style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: 0, background: 'none', border: 'none', boxShadow: 'none', padding: 0 }}>
-          <div className="game-room-left" style={{ minWidth: 160, maxWidth: 320, width: '50%', display: 'flex', flexDirection: 'column', gap: 20, minHeight: 220, background: '#222', borderRadius: '0 0 0 16px', boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
+          <div className="game-room-left" style={{ minWidth: 160, maxWidth: 320, width: '50%', /* display: 'flex', */ flexDirection: 'column', gap: 20, minHeight: 220, background: '#222', borderRadius: '0 0 0 16px', boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
+            <h4 style={{ color: '#a7bfff', fontWeight: 700, fontSize: 18, margin: '12px 0 0 18px', letterSpacing: 1 }}>Players</h4>
             <PlayerList
               players={mergedPlayers}
               hostId={room?.players?.find(p => p.isHost)?.userId}
@@ -1360,7 +1368,7 @@ export default function GameRoomPage() {
                   )}
                   {msg.correct && !msg.system ? (
                     <span style={{ fontWeight: 500 }}>
-                      guessed the correct word!
+                      correct guess
                     </span>
                   ) : (
                     <span style={{ fontWeight: 500 }}>{msg.message}</span>
@@ -1458,7 +1466,8 @@ export default function GameRoomPage() {
         boxSizing: 'border-box',
       }}>
         {/* Left: Players/Scores */}
-        <div className="game-room-left" style={{ flex: '1 1 0', minWidth: 160, maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
+        <div className="game-room-left" style={{ flex: '1 1 0', minWidth: 160, maxWidth: 320, /* display: 'flex', */ flexDirection: 'column', gap: 20, minHeight: 420, background: '#222', borderRadius: 16, boxShadow: '0 2px 16px #0006', padding: '10px 0', justifyContent: 'flex-start', boxSizing: 'border-box' }}>
+          <h4 style={{ color: '#a7bfff', fontWeight: 700, fontSize: 18, margin: '12px 0 0 18px', letterSpacing: 1 }}>Players</h4>
           <PlayerList
             players={mergedPlayers}
             hostId={room?.players?.find(p => p.isHost)?.userId}
@@ -1598,7 +1607,7 @@ export default function GameRoomPage() {
                 )}
                 {msg.correct && !msg.system ? (
                   <span style={{ fontWeight: 500 }}>
-                    guessed the correct word!
+                    correct guess
                   </span>
                 ) : (
                   <span style={{ fontWeight: 500 }}>{msg.message}</span>
@@ -1754,18 +1763,13 @@ export default function GameRoomPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 20 }}>{player.avatar?.emoji || '👤'}</span>
                         <span style={{ color: '#fff', fontWeight: 600 }}>{player.name}</span>
-                        {isDrawer && <span style={{ color: '#a777e3', fontSize: 12 }}>(Drawer)</span>}
-                        {isCorrect && <span style={{ color: '#1aff7c', fontSize: 12 }}>✓ Correct</span>}
                         {isClose && !isCorrect && <span style={{ color: '#ffd700', fontSize: 12 }}>~ Close</span>}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {guess && !isDrawer && !isDrawerGuess && (
-                          <span style={{ color: '#aaa', fontSize: 12 }}>"{guess.guess}"</span>
+                          null // Remove guessed word display
                         )}
-                        {isDrawerGuess && (
-                          <span style={{ color: '#a777e3', fontSize: 12 }}>+{guess?.score || 0} for drawing</span>
-                        )}
-                        <span style={{ color: '#ffd700', fontWeight: 'bold' }}>
+                        <span style={{ color: '#ffd700', fontWeight: 'bold', marginLeft: 16 }}>
                           {guess?.score || 0} pts
                         </span>
                       </div>
@@ -1851,7 +1855,6 @@ export default function GameRoomPage() {
     </div>
   );
 }
-
 function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEraser, setIsEraser, disabled, onUndo, canUndo, onClear }) {
   const COLORS = [
     '#000', '#222', '#fff', '#e53935', '#fbc02d', '#43a047', '#1e88e5',
@@ -1947,3 +1950,4 @@ function CanvasControls({ color, setColor, width, setWidth, tool, setTool, isEra
     </div>
   );
 }
+
