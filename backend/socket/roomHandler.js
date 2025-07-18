@@ -55,7 +55,7 @@ module.exports = function roomHandler(io, socket) {
   });
 
   socket.on('room:updateSettings', async ({ code, settings }, callback) => {
-    console.log('[Settings Save] Received settings from frontend:', settings);
+    // console.log('[Settings Save] Received settings from frontend:', settings);
     const room = await Room.findOne({ code });
     if (!room) return callback && callback({ error: 'Room not found' });
     room.settings = { ...room.settings, ...settings };
@@ -66,7 +66,7 @@ module.exports = function roomHandler(io, socket) {
       if (settings.maxRounds !== undefined) room.gameState.maxRounds = settings.maxRounds;
     }
     await room.save();
-    console.log('[Settings Save] Room after save:', room.settings);
+    // console.log('[Settings Save] Room after save:', room.settings);
     io.to(code).emit('room:update', room);
     callback && callback(room);
   });
@@ -147,7 +147,7 @@ module.exports = function roomHandler(io, socket) {
     const clients = await io.in(code).allSockets();
     clients.forEach(sid => io.sockets.sockets.get(sid)?.leave(code));
     await Room.deleteOne({ code });
-    console.log(`[room-closed] Room ${code} closed and deleted.`);
+    // console.log(`[room-closed] Room ${code} closed and deleted.`);
   });
 
   socket.on('disconnect', async () => {

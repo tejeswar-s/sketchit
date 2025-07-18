@@ -15,7 +15,7 @@ async function createRoom(req, res) {
     await room.save();
     res.status(201).json(room);
   } catch (error) {
-    console.error(`Error creating room:`, error);
+    // console.error(`Error creating room:`, error);
     res.status(500).json({ message: 'Failed to create room' });
   }
 }
@@ -54,7 +54,7 @@ async function getRoom(req, res) {
     
     res.json(room);
   } catch (error) {
-    console.error(`Error finding room ${code}:`, error);
+    // console.error(`Error finding room ${code}:`, error);
     res.status(500).json({ message: 'Server error' });
   }
 }

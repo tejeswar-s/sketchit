@@ -33,7 +33,7 @@ module.exports = function gameHandler(io, socket) {
     if (userId !== drawerId) return callback && callback({ error: 'Not your turn' });
     if (!room.gameState.wordChoices.includes(word)) return callback && callback({ error: 'Invalid word' });
     clearRoomTimers(code); // Clear the word select timer before starting drawing phase
-    console.log(`[word-select] Timer cleared for code: ${code}`);
+    // console.log(`[word-select] Timer cleared for code: ${code}`);
     await startDrawingPhase(io, code, word);
     // Emit updated room state to all clients
     const updatedRoom = await Room.findOne({ code });
@@ -223,7 +223,7 @@ async function autoSelectWord(io, code) {
   }
   const word = room.gameState.wordChoices[0];
   if (!word) {
-    console.error('No word available for auto-select!');
+    // console.error('No word available for auto-select!');
     return;
   }
   await startDrawingPhase(io, code, word);
@@ -250,7 +250,7 @@ function getHintRandom(word, level, revealedIndexes) {
 
 async function startDrawingPhase(io, code, word) {
   if (!word) {
-    console.error('No word provided to startDrawingPhase!');
+    // console.error('No word provided to startDrawingPhase!');
     return;
   }
   clearRoomTimers(code);
@@ -266,7 +266,7 @@ async function startDrawingPhase(io, code, word) {
   }
   
   
-  console.log('startDrawingPhase called for code:', code, 'with word:', word);
+  // console.log('startDrawingPhase called for code:', code, 'with word:', word);
   room.gameState.currentWord = word;
   room.gameState.phase = 'drawing';
   room.gameState.timer = room.settings.roundTime;
@@ -307,22 +307,22 @@ async function startDrawingPhase(io, code, word) {
       // Only emit to guessers (not drawer)
       const guessers = room.players.filter(p => p.userId !== room.gameState.drawingPlayerId);
       let delivered = 0;
-      console.log(`[HINT] Timer triggered for room ${code}, hintLevel=${hintLevel}, hint='${hint}'`);
+      // console.log(`[HINT] Timer triggered for room ${code}, hintLevel=${hintLevel}, hint='${hint}'`);
       guessers.forEach(p => {
         if (p.socketId) {
           io.to(p.socketId).emit('hint-update', { hint });
           delivered++;
-          console.log(`[HINT] Sent to guesser ${p.userId} (socketId=${p.socketId})`);
+          // console.log(`[HINT] Sent to guesser ${p.userId} (socketId=${p.socketId})`);
         } else {
-          console.log(`[HINT] No socketId for guesser ${p.userId}`);
+          // console.log(`[HINT] No socketId for guesser ${p.userId}`);
         }
       });
       if (delivered === 0) {
         // Fallback: emit to room (all guessers will see, including drawer, but better than nothing)
         io.to(code).emit('hint-update', { hint });
-        console.log(`[HINT] Fallback: emitted to room ${code}`);
+        // console.log(`[HINT] Fallback: emitted to room ${code}`);
       } else {
-        console.log(`[HINT] Sent to ${delivered} guessers in room ${code}`);
+        // console.log(`[HINT] Sent to ${delivered} guessers in room ${code}`);
       }
     }
     if (room.gameState.timer <= 0) {
@@ -351,7 +351,7 @@ function clearRoomTimers(code) {
     cleared = true;
   }
   if (cleared) {
-    console.log(`[clearRoomTimers] Cleared timers for code: ${code}`);
+    // console.log(`[clearRoomTimers] Cleared timers for code: ${code}`);
   }
 }
 
@@ -427,7 +427,7 @@ async function nextRoundOrEnd(io, code) {
     room.gameState.phase = 'ended';
     room.gameState.round = room.currentRound;
     await room.save();
-    console.log(`[nextRoundOrEnd] Game ended at round limit (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds})`);
+    // console.log(`[nextRoundOrEnd] Game ended at round limit (currentRound=${room.currentRound}, maxRounds=${room.settings.maxRounds})`);
     await emitGameEnd(io, code, room);
     return;
   }

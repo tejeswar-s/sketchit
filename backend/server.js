@@ -29,14 +29,12 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = 5000;
-const MONGO_URI = 'mongodb://localhost:27017/sketchit';
-
 const server = http.createServer(app);
 
 // Connect to DB and start server
-connectDB(MONGO_URI).then(() => {
+connectDB().then(() => {
   initSocket(server);
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+    // console.log(`Server running on port ${PORT}`);
   });
 }); 
