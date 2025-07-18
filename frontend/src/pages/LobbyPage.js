@@ -118,7 +118,17 @@ export default function LobbyPage() {
                         onClick={handleStart}
                         className="button-49"
                         disabled={!canStart}
-                        style={{ fontWeight: 800, fontSize: 20, borderRadius: 10, outline: 'none', cursor: canStart ? 'pointer' : 'not-allowed', opacity: canStart ? 1 : 0.7, position: 'relative', overflow: 'hidden', letterSpacing: 2 }}
+                        style={{
+                          fontWeight: 800,
+                          fontSize: 24, // Increased font size
+                          borderRadius: 10,
+                          outline: 'none',
+                          cursor: canStart ? 'pointer' : 'not-allowed',
+                          opacity: canStart ? 1 : 0.7,
+                          position: 'relative',
+                          overflow: 'hidden',
+                          letterSpacing: 2,
+                        }}
                       >
                         Start Game
                       </button>

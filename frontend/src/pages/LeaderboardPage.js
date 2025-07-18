@@ -108,7 +108,7 @@ export default function LeaderboardPage() {
           marginTop: 4,
         }}>
           <span style={{
-            fontSize: '7vw',
+            fontSize: '2.5rem',
             fontWeight: 700,
             letterSpacing: 1.5,
             color: '#a777e3',
@@ -121,16 +121,18 @@ export default function LeaderboardPage() {
         </div>
 
         <h2 style={{
-          marginTop: 40,
+          marginTop: 24,
           color: '#fff',
           letterSpacing: 0.8,
-          fontSize: '5.2vw',
+          fontSize: '2.2rem',
+          fontWeight: 700,
         }}>Game Over!</h2>
 
         <div style={{
           color: '#aaa',
-          fontSize: '3.6vw',
+          fontSize: '1.1rem',
           marginBottom: 16,
+          fontWeight: 500,
         }}>Final Leaderboard</div>
 
         <div style={{
@@ -146,23 +148,35 @@ export default function LeaderboardPage() {
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 10,
+          gap: 12,
           justifyContent: 'center',
           marginTop: 20,
         }}>
           <button
             className="btn btn-primary"
-            style={{ minWidth: 100, fontSize: '3.6vw' }}
+            style={{ 
+              minWidth: 120, 
+              fontSize: '1rem',
+              padding: '10px 20px',
+              fontWeight: 600,
+            }}
             onClick={() => {
-              if (!isHost) return;
-              socket.emit('replay', { code: room.code });
+              socket.emit('play-again', { code: room.code, userId: user.userId });
+              setLeaderboard([]);
+              setGameState(null);
+              navigate(`/lobby/${roomCode}`);
             }}
           >
             Play Again
           </button>
           <button
             className="btn btn-danger"
-            style={{ minWidth: 100, fontSize: '3.6vw' }}
+            style={{ 
+              minWidth: 120, 
+              fontSize: '1rem',
+              padding: '10px 20px',
+              fontWeight: 600,
+            }}
             onClick={() => {
               if (user.isHost) {
                 socket.emit('room-closed', { code: roomCode });

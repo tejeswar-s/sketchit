@@ -266,7 +266,21 @@ export default function HomePage() {
             disabled={loading || !name.trim()}
             className={`btn btn-primary homepage-btn shine-effect${shineOutCreate ? ' out' : ''}`}
             data-mdb-ripple-init={(!loading && name.trim()) ? true : undefined}
-            style={{ fontWeight: 700, fontSize: 18, borderRadius: 20, boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33', letterSpacing: 1, height: 44, width: '100%', maxWidth: 320, margin: '4px 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+            style={{
+              fontWeight: 700,
+              fontSize: 18, // Restore previous font size
+              borderRadius: 20,
+              boxShadow: '0 2px 12px #a777e344, 0 0 4px #6e44ff33',
+              letterSpacing: 1,
+              height: 44, // Restore previous height
+              width: '100%',
+              maxWidth: 320,
+              margin: '4px 0 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+            }}
             onMouseOut={() => setShineOutCreate(true)}
             onAnimationEnd={() => setShineOutCreate(false)}
           >

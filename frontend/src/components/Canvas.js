@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import { useSocket } from '../contexts/SocketContext';
+import CanvasControls from './CanvasControls';
 
 export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, tempStroke = [], disabled, color, width, tool, isEraser, setColor, setWidth, setTool, setIsEraser, onUndo, onRedo, renderControls }) {
   const canvasRef = useRef(null);
@@ -219,6 +220,58 @@ export default function Canvas({ isDrawing, onDraw, onStrokeEnd, drawingData, te
             max-width: 98vw !important;
             width: 100vw !important;
             height: auto !important;
+          }
+        }
+        .canvas-controls {
+          gap: 12px !important;
+          padding: 8px 0 !important;
+          width: fit-content !important;
+          min-width: 0 !important;
+          max-width: 100vw !important;
+          box-sizing: border-box !important;
+        }
+        .canvas-controls > div {
+          gap: 12px !important;
+          padding: 0 !important;
+        }
+        .canvas-controls button, .canvas-controls .btn, .canvas-controls .btn-sm {
+          margin: 0 !important;
+        }
+        @media (max-width: 400px) {
+          canvas {
+            max-width: 92vw !important;
+            width: 92vw !important;
+          }
+          .canvas-controls {
+            gap: 2px !important;
+            padding: 2px 0 !important;
+            width: 92vw !important;
+            min-width: 0 !important;
+            max-width: 92vw !important;
+            box-sizing: border-box !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+          }
+          .canvas-controls > div {
+            gap: 2px !important;
+            padding: 0 !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+          }
+          .canvas-controls button, .canvas-controls .btn, .canvas-controls .btn-sm {
+            margin: 0 !important;
+            min-width: 28px !important;
+            min-height: 28px !important;
+            max-width: 38px !important;
+            max-height: 38px !important;
+            font-size: 1.1rem !important;
           }
         }
       `}</style>

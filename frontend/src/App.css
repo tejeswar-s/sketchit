@@ -241,7 +241,7 @@ html {
     input,
     button {
         font-size: 0.98rem !important;
-        min-height: 40px !important;
+        min-height: 24px !important;
     }
 
     .settings-title {

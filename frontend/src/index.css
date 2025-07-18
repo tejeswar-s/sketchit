@@ -1,3 +1,8 @@
+/* Ensure all elements use border-box for sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {

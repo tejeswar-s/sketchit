@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "avataaars": "^2.0.0",
-    "express-rate-limit": "^7.5.1"
-  }
-}
