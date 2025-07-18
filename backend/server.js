@@ -28,7 +28,15 @@ app.use('/api/health', healthRouter);
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = 5000;
+// Add top-level error handlers
+process.on('uncaughtException', err => {
+  console.error('Uncaught Exception:', err);
+});
+process.on('unhandledRejection', err => {
+  console.error('Unhandled Rejection:', err);
+});
+
+const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
 // Connect to DB and start server
