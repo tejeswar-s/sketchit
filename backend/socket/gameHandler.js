@@ -133,11 +133,16 @@ module.exports = function gameHandler(io, socket) {
   });
 };
 
+module.exports.endRound = endRound;
+
 // --- Helper Functions ---
 
 async function emitGameEnd(io, code, room) {
   // Sort leaderboard by score descending
   const sorted = [...room.players].sort((a, b) => b.score - a.score);
+  // Set playAgain: true for all players at game end
+  room.players.forEach(p => { p.playAgain = true; });
+  await room.save();
   io.to(code).emit('game-end', {
     leaderboard: sorted.map(p => ({ userId: p.userId, name: p.name, score: p.score, avatar: p.avatar })),
   });
@@ -350,45 +355,57 @@ function clearRoomTimers(code) {
   }
 }
 
-async function endRound(io, code) {
+async function endRound(io, code, drawerLeft = false, leftPlayerName = null) {
   clearRoomTimers(code);
   const room = await Room.findOne({ code });
   if (!room) return;
 
-  // Normal round end logic
   room.gameState.phase = 'round-end';
-  // Award drawer points: e.g., 50 * number of correct guessers
-  const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
-  const drawer = room.players.find(p => p.userId === room.gameState.drawingPlayerId);
-  const drawerScore = correctGuessers.length * 50;
-  if (drawer) drawer.score += drawerScore;
-  
-  // Add drawer's score to guesses array for round summary display
-  const drawerGuess = {
-    userId: room.gameState.drawingPlayerId,
-    guess: '',
-    correct: false,
-    isClose: false,
-    time: Date.now(),
-    score: drawerScore,
-    isDrawer: true
-  };
-  room.gameState.guesses.push(drawerGuess);
-  
-  await room.save(); // Save updated scores before emitting
-  io.to(code).emit('room:update', room); // Emit updated room state
-  console.log('Emitting round-end with guesses:', room.gameState.guesses);
+
+  if (drawerLeft) {
+    // Set all guesses to incorrect and score 0
+    room.gameState.guesses = room.players.map(p => ({ userId: p.userId, guess: '', correct: false, score: 0 }));
+    // Optionally, add a system message
+    io.to(code).emit('system-message', { message: `Drawer left (${leftPlayerName || 'A player'}). Round ended with 0 points. Next drawer's turn!` });
+  } else {
+    // Normal round end logic
+    const correctGuessers = room.gameState.guesses.filter(g => g.correct).map(g => g.userId);
+    const drawer = room.players.find(p => p.userId === room.gameState.drawingPlayerId);
+    const drawerScore = correctGuessers.length * 50;
+    if (drawer) drawer.score += drawerScore;
+    // Add drawer's score to guesses array for round summary display
+    const drawerGuess = {
+      userId: room.gameState.drawingPlayerId,
+      guess: '',
+      correct: false,
+      isClose: false,
+      time: Date.now(),
+      score: drawerScore,
+      isDrawer: true
+    };
+    room.gameState.guesses.push(drawerGuess);
+  }
+
+  await room.save();
+  io.to(code).emit('room:update', room);
   io.to(code).emit('round-end', {
     word: room.gameState.currentWord,
     scores: room.players.map(p => ({ userId: p.userId, score: p.score })),
     guesses: room.gameState.guesses,
   });
-  setTimeout(async () => {
-    const latestRoom = await Room.findOne({ code });
-    if (!latestRoom) return;
-    if (latestRoom.status === 'ended') return;
-    nextRoundOrEnd(io, code);
-  }, 4000);
+  // Immediately start next round if drawer left
+  if (drawerLeft) {
+    setTimeout(async () => {
+      await nextRoundOrEnd(io, code);
+    }, 2000);
+  } else {
+    setTimeout(async () => {
+      const latestRoom = await Room.findOne({ code });
+      if (!latestRoom) return;
+      if (latestRoom.status === 'ended') return;
+      nextRoundOrEnd(io, code);
+    }, 4000);
+  }
 }
 
 async function nextRoundOrEnd(io, code) {

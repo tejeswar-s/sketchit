@@ -71,10 +71,20 @@ module.exports = function roomHandler(io, socket) {
     callback && callback(room);
   });
 
-  socket.on('start-game', async ({ code, userId }) => {
+  socket.on('start-game', async ({ code, userId }, callback) => {
     const room = await Room.findOne({ code });
     if (!room) return;
     if (!room.players.find(p => p.userId === userId)?.isHost) return;
+
+    // Only filter for playAgain if any player has the flag
+    if (room.players.some(p => p.playAgain !== undefined)) {
+      room.players = room.players.filter(p => p.playAgain);
+    }
+    // Remove playAgain flag for new game
+    room.players.forEach(p => { delete p.playAgain; });
+
+    // --- Reset all player scores to 0 for a fresh game ---
+    room.players.forEach(p => { p.score = 0; });
 
     const settings = room.settings || {};
     const { maxRounds = 3, roundTime = 60, wordCount = 3, hintIntervals = [15, 30] } = settings;
@@ -113,7 +123,12 @@ module.exports = function roomHandler(io, socket) {
   });
 
   socket.on('play-again', async ({ code, userId }, callback) => {
-    // No longer needed: just acknowledge
+    const room = await Room.findOne({ code });
+    if (!room) return callback && callback({ error: 'Room not found' });
+    const player = room.players.find(p => p.userId === userId);
+    if (player) player.playAgain = true;
+    await room.save();
+    io.to(code).emit('room:update', room);
     callback && callback({ success: true });
   });
 
@@ -204,7 +219,11 @@ async function handlePlayerLeave(io, code, userId) {
     room.gameState.guesses = room.players.map(p => ({ userId: p.userId, guess: '', correct: false, score: 0 }));
     await room.save();
     // Instead of calling gameHandler.endRound (not exported), emit a custom event to all sockets in the room
-    io.to(code).emit('force-end-round');
+    // io.to(code).emit('force-end-round');
+    // Call endRound with drawerLeft flag and player name
+    const { endRound } = require('./gameHandler');
+    await endRound(io, code, true, leavingPlayer.name);
+    io.to(code).emit('player-left', { name: leavingPlayer.name });
     return; // End here, as the frontend/gameHandler should handle the next round
   }
 
